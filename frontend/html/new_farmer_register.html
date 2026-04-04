@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Farmer Registration - Mango Market</title>
+    <link rel="stylesheet" href="../css/auth.css">
+    <style>
+        h2 { color: #2e7d32 !important; }
+        .section-header { color: #2e7d32; border-bottom: 1px solid #c8e6c9; }
+        button { background: #2e7d32 !important; }
+        button:hover { background: #1b5e20 !important; }
+        .btn-grey { background-color: #6b7280 !important; }
+        .btn-green { background-color: #2e7d32 !important; }
+        a { color: #2e7d32; }
+        input:focus { border-color: #2e7d32 !important; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>Farmer Registration</h2>
+        <p style="text-align: center; color: #666; margin-bottom: 20px;">
+            Join our community to sell your produce directly.
+        </p>
+
+        <form id="farmerRegisterForm">
+            
+            <div style="margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+                <h3 style="color: #2e7d32; font-size: 1.1rem; margin-bottom: 15px;">1. Personal Details</h3>
+                
+                <div class="form-group">
+                    <label for="full_name">Full Name *</label>
+                    <input type="text" id="full_name" name="full_name" placeholder="Enter your full name" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="phone">Phone Number *</label>
+                    <input type="tel" id="phone" name="phone" pattern="[0-9]{10}" placeholder="10 digit mobile number" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Email Address *</label>
+                    
+                    <div class="input-row">
+                        <input type="email" id="email" name="email" placeholder="example@gmail.com" required>
+                        <button type="button" id="sendOtpBtn" class="btn-grey">Get OTP</button>
+                    </div>
+
+                    <div id="otpSection" class="otp-container" style="display: none;">
+                        <label class="otp-label">Enter OTP sent to your email</label>
+                        
+                        <div class="input-row">
+                            <input type="text" id="otpInput" placeholder="Enter 6-digit OTP" maxlength="6">
+                            <button type="button" id="verifyOtpBtn" class="btn-green">Verify</button>
+                        </div>
+                        
+                        <div class="timer-text" id="timer">Resend OTP in <span id="countdown">30</span>s</div>
+                    </div>
+
+                    <div id="otpSuccessMsg" style="color: #2e7d32; font-weight: bold; margin-top: 10px; display: none;">
+                        ✅ Email Verified Successfully!
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+                <h3 style="color: #2e7d32; font-size: 1.1rem; margin-bottom: 15px;">2. Farm Location</h3>
+
+                <div class="form-group">
+                    <label for="state">State *</label>
+                    <input type="text" id="state" name="state" placeholder="e.g. Maharashtra" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="district">District *</label>
+                    <input type="text" id="district" name="district" placeholder="e.g. Ratnagiri" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="address">Address / Village *</label>
+                    <input type="text" id="address" name="address" placeholder="House No, Street, Village" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="market_area">Nearest Mandi / Market Area *</label>
+                    <input type="text" id="market_area" name="market_area" placeholder="e.g. APMC Market Yard" required>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+                <h3 style="color: #2e7d32; font-size: 1.1rem; margin-bottom: 5px;">3. Banking Details</h3>
+                <p style="font-size: 0.85rem; color: #666; margin-bottom: 15px;">🔒 Used only for receiving payments safely.</p>
+
+                <div class="form-group">
+                    <label for="account_holder">Account Holder Name</label>
+                    <input type="text" id="account_holder" name="account_holder" placeholder="Name as on bank account">
+                </div>
+
+                <div class="form-group">
+                    <label for="bank_name">Bank Name</label>
+                    <input type="text" id="bank_name" name="bank_name" placeholder="e.g. State Bank of India">
+                </div>
+
+                <div class="form-group">
+                    <label for="branch_name">Branch Name</label>
+                    <input type="text" id="branch_name" name="branch_name" placeholder="Branch / IFSC branch name">
+                </div>
+
+                <div class="form-group">
+                    <label for="bank_account">Bank Account Number</label>
+                    <input type="text" id="bank_account" name="bank_account">
+                </div>
+
+                <div class="form-group">
+                    <label for="ifsc">IFSC Code</label>
+                    <input type="text" id="ifsc" name="ifsc" style="text-transform: uppercase;" placeholder="e.g. SBIN0001234" maxlength="11" pattern="[A-Za-z]{4}0[A-Za-z0-9]{6}" title="Valid IFSC (11 chars): e.g. SBIN0001234">
+                </div>
+
+                <div class="form-group">
+                    <label for="upi_id">UPI ID (Optional)</label>
+                    <input type="text" id="upi_id" name="upi_id" placeholder="e.g. name@okhdfcbank">
+                </div>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <h3 style="color: #2e7d32; font-size: 1.1rem; margin-bottom: 15px;">4. Account Security</h3>
+
+                <div class="form-group">
+                    <label for="password">Create Password *</label>
+                    <input type="password" id="password" name="password" placeholder="Min 6 chars: mix letters, numbers, symbols (e.g., Pass@123)" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="confirm_password">Confirm Password *</label>
+                    <input type="password" id="confirm_password" name="confirm_password" placeholder="Re-enter password" required>
+                </div>
+            </div>
+
+            <button type="submit" id="submitBtn" disabled>Create Farmer Account</button>
+            <p style="text-align: center; color: #d32f2f; font-size: 0.9rem; margin-top: 10px;" id="verifyWarning">
+                ⚠️ Please verify your email before submitting
+            </p>
+        </form>
+        
+        <div class="links">
+            <p>Already have an account? <a href="farmer_login.html">Login here</a></p>
+            <p><a href="home.html">← Back to Home</a></p>
+        </div>
+    </div>
+
+    <script src="../js/api.js"></script>
+    <script src="../js/auth.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Broker Document Verification Panel - Mango Market Platform</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        /* Main Dashboard */
+        #verificationDashboard {
+            padding: 40px 20px;
+            min-height: 100vh;
+        }
+
+        .dashboard-header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+
+        .dashboard-header h1 {
+            font-size: 36px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .dashboard-header p {
+            font-size: 16px;
+            opacity: 0.95;
+        }
+
+        .dashboard-controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .dashboard-controls button {
+            padding: 10px 20px;
+            background: white;
+            color: #667eea;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .dashboard-controls button:hover {
+            background: #f8f9ff;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .table-container {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            overflow-x: auto;
+        }
+
+        .table-container h2 {
+            color: #333;
+            margin-bottom: 25px;
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        #loadingMessage {
+            display: none;
+            text-align: center;
+            padding: 40px;
+            color: #667eea;
+            font-size: 18px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        table thead {
+            background: #f8f9fa;
+            border-bottom: 2px solid #ddd;
+        }
+
+        table th {
+            padding: 15px;
+            text-align: left;
+            color: #333;
+            font-weight: 600;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        table td {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            font-size: 14px;
+        }
+
+        table tbody tr:hover {
+            background: #f8f9fa;
+            transition: all 0.3s ease;
+        }
+
+        table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Action Buttons */
+        .btn {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 2px;
+        }
+
+        .btn-success {
+            background: #27ae60;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #229954;
+            box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3);
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c0392b;
+            box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
+        }
+
+        .btn-info {
+            background: #3498db;
+            color: white;
+        }
+
+        .btn-info:hover {
+            background: #2980b9;
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+        }
+
+        .btn-sm {
+            padding: 6px 10px;
+            font-size: 12px;
+        }
+
+        /* Badges */
+        .badge {
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .badge-warning {
+            background: #f39c12;
+            color: white;
+        }
+
+        .badge-success {
+            background: #27ae60;
+            color: white;
+        }
+
+        .badge-danger {
+            background: #e74c3c;
+            color: white;
+        }
+
+        /* Links */
+        a {
+            color: #3498db;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        a:hover {
+            color: #2980b9;
+            text-decoration: underline;
+        }
+
+        /* Logout Button */
+        .logout-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            background: white;
+            color: #667eea;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            z-index: 999;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .logout-btn:hover {
+            background: #f8f9ff;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .table-container {
+                padding: 15px;
+            }
+
+            table th,
+            table td {
+                padding: 10px;
+                font-size: 12px;
+            }
+
+            .dashboard-header h1 {
+                font-size: 24px;
+            }
+
+            .btn {
+                padding: 6px 8px;
+                font-size: 11px;
+            }
+        }
+
+        /* No Data Message */
+        .no-data {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        .no-data p {
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+
+        .no-data small {
+            color: #bbb;
+        }
+    </style>
+</head>
+<body>
+    <!-- Logout Button -->
+    <button class="logout-btn" onclick="logoutHost()">Logout</button>
+
+    <!-- Header -->
+    <div class="dashboard-header">
+        <h1>📋 Broker Document Verification Panel</h1>
+        <p>Review newly registered brokers and verify their Mango Market Trade License</p>
+    </div>
+
+    <!-- Controls -->
+    <div class="dashboard-controls">
+        <button onclick="refreshTable()">🔄 Refresh</button>
+        <button onclick="alert('Feature coming soon')">📊 View Statistics</button>
+    </div>
+
+    <!-- Table Container -->
+    <div class="table-container">
+        <h2>Pending Broker Verifications</h2>
+        
+        <div id="loadingMessage">
+            <p>Loading pending brokers...</p>
+        </div>
+
+        <table id="pendingBrokersTable">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Broker Name</th>
+                    <th>Market Name</th>
+                    <th>Phone Number</th>
+                    <th>Email</th>
+                    <th>Location (City, District, State)</th>
+                    <th>Trade License</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="pendingBrokersData">
+                <tr>
+                    <td colspan="9" class="no-data">
+                        <p>Loading pending brokers...</p>
+                        <small>Please wait</small>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const API_BASE = 'http://127.0.0.1:5000';
+
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('[Host Dashboard] Page loaded');
+            
+            // Check if user has verified password
+            const verified = localStorage.getItem('host_password_verified');
+            if (verified !== 'true') {
+                console.log('[Host Dashboard] Access denied - redirecting to host_access.html');
+                window.location.href = 'host_access.html';
+                return;
+            }
+            
+            // Load pending brokers
+            loadPendingBrokers();
+        });
+
+        async function loadPendingBrokers() {
+            const table = document.getElementById('pendingBrokersTable');
+            const loadingMsg = document.getElementById('loadingMessage');
+            
+            if (loadingMsg) {
+                loadingMsg.style.display = 'block';
+            }
+            
+            try {
+                console.log('[Host Dashboard] Fetching pending brokers...');
+                
+                const response = await fetch(`${API_BASE}/api/host/brokers/pending`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include'
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP Error: ${response.status}`);
+                }
+                
+                const brokers = await response.json();
+                console.log('[Host Dashboard] Fetched brokers:', brokers);
+                
+                // Hide loading message
+                if (loadingMsg) {
+                    loadingMsg.style.display = 'none';
+                }
+                
+                // Populate table
+                if (Array.isArray(brokers) && brokers.length > 0) {
+                    populateBrokersTable(brokers);
+                } else {
+                    showNoBrokersMessage(table);
+                }
+            } catch (error) {
+                console.error('[Host Dashboard] Error loading brokers:', error);
+                if (loadingMsg) {
+                    loadingMsg.innerHTML = `<p style="color: red;">Error loading brokers: ${error.message}</p>`;
+                }
+            }
+        }
+
+        function populateBrokersTable(brokers) {
+            const tbody = document.getElementById('pendingBrokersData');
+            
+            if (!tbody) {
+                console.error('[Host Dashboard] Table body not found');
+                return;
+            }
+            
+            // Clear existing rows
+            tbody.innerHTML = '';
+            
+            brokers.forEach((broker, index) => {
+                const row = document.createElement('tr');
+                
+                // Location (City, District, State)
+                let location = broker.location || 'N/A';
+                
+                row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td>${broker.broker_name || 'N/A'}</td>
+                    <td>${broker.market_name || 'N/A'}</td>
+                    <td>${broker.phone || 'N/A'}</td>
+                    <td><a href="mailto:${broker.email}">${broker.email || 'N/A'}</a></td>
+                    <td>${location}</td>
+                    <td>
+                        ${broker.trade_license ? 
+                            `<button class="btn btn-sm btn-info" onclick="viewLicense('${broker.trade_license}')">
+                                📥 Download
+                            </button>` 
+                            : 'No document'}
+                    </td>
+                    <td><span class="badge badge-warning">${broker.verification_status}</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-success" onclick="approveBroker(${broker.id}, '${broker.broker_name}')">
+                            Approve
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="rejectBroker(${broker.id}, '${broker.broker_name}')">
+                            Decline
+                        </button>
+                    </td>
+                `;
+                
+                tbody.appendChild(row);
+            });
+        }
+
+        function showNoBrokersMessage(table) {
+            const tbody = document.getElementById('pendingBrokersData');
+            
+            if (tbody) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="9" style="text-align: center; padding: 30px;">
+                            <p style="color: #666; font-size: 16px;">No pending broker registrations at this time.</p>
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+
+        function viewLicense(licensePath) {
+            if (!licensePath) {
+                alert('No trade license document available');
+                return;
+            }
+            
+            console.log('[Host Dashboard] Downloading license:', licensePath);
+            
+            // Construct full URL
+            const licenseUrl = `${API_BASE}/${licensePath}`;
+            
+            // Create a temporary anchor element to trigger download
+            const link = document.createElement('a');
+            link.href = licenseUrl;
+            
+            // Extract filename from path for download
+            const filename = licensePath.split('/').pop() || 'trade_license.pdf';
+            link.download = filename;
+            
+            // Add to DOM, click, and remove
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            console.log('[Host Dashboard] Download started for:', filename);
+        }
+
+        async function approveBroker(brokerId, brokerName) {
+            if (!confirm(`Approve broker "${brokerName}"?`)) {
+                return;
+            }
+            
+            try {
+                console.log('[Host Dashboard] Approving broker:', brokerId);
+                
+                const response = await fetch(`${API_BASE}/api/host/brokers/${brokerId}/approve`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include'
+                });
+                
+                const data = await response.json();
+                
+                if (data.success || response.ok) {
+                    console.log('[Host Dashboard] Broker approved successfully');
+                    alert(`Broker "${brokerName}" has been approved successfully!`);
+                    
+                    // Refresh the table
+                    loadPendingBrokers();
+                } else {
+                    console.error('[Host Dashboard] Approval failed:', data.message);
+                    alert(`Error: ${data.message || 'Failed to approve broker'}`);
+                }
+            } catch (error) {
+                console.error('[Host Dashboard] Error approving broker:', error);
+                alert(`Error: ${error.message}`);
+            }
+        }
+
+        async function rejectBroker(brokerId, brokerName) {
+            const reason = prompt(`Enter reason for declining ${brokerName}:`, 'License document is invalid or incomplete');
+            
+            if (reason === null) {
+                // User cancelled
+                return;
+            }
+            
+            try {
+                console.log('[Host Dashboard] Rejecting broker:', brokerId, 'Reason:', reason);
+                
+                const response = await fetch(`${API_BASE}/api/host/brokers/${brokerId}/reject`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ reason: reason }),
+                    credentials: 'include'
+                });
+                
+                const data = await response.json();
+                
+                if (data.success || response.ok) {
+                    console.log('[Host Dashboard] Broker rejected successfully');
+                    alert(`Broker "${brokerName}" has been declined.`);
+                    
+                    // Refresh the table
+                    loadPendingBrokers();
+                } else {
+                    console.error('[Host Dashboard] Rejection failed:', data.message);
+                    alert(`Error: ${data.message || 'Failed to reject broker'}`);
+                }
+            } catch (error) {
+                console.error('[Host Dashboard] Error rejecting broker:', error);
+                alert(`Error: ${error.message}`);
+            }
+        }
+
+        function logoutHost() {
+            if (confirm('Are you sure you want to logout?')) {
+                localStorage.removeItem('host_password_verified');
+                window.location.href = 'host_access.html';
+            }
+        }
+
+        function refreshTable() {
+            console.log('[Host Dashboard] Refreshing table...');
+            loadPendingBrokers();
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,178 @@
+/* Broker Theme - Orange */
+h2 { color: #e65100 !important; }
+button, .btn-primary, .broker-btn { background: #e65100 !important; }
+button:hover, .btn-primary:hover, .broker-btn:hover { background: #bf360c !important; }
+
+/* Broker-specific button styles */
+.btn-outline { border-color: #e65100 !important; color: #e65100 !important; }
+.btn-outline:hover { border-color: #bf360c !important; color: #bf360c !important; background: rgba(230, 81, 0, 0.1) !important; }
+
+/* Modal Styles */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.modal-content {
+    background: #ffffff;
+    margin: 5% auto;
+    padding: 40px;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 480px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+    animation: slideDown 0.3s ease-out;
+    border: 1px solid #e5e7eb;
+}
+
+@keyframes slideDown {
+    from { transform: translateY(-30px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.modal-close {
+    color: #9ca3af;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    line-height: 20px;
+    transition: color 0.25s ease;
+}
+
+.modal-close:hover {
+    color: #e65100;
+}
+
+.modal h2 {
+    color: #e65100;
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-size: 24px;
+    clear: both;
+}
+
+.modal-step {
+    display: none;
+}
+
+.modal-step.active {
+    display: block;
+}
+
+.step-indicator {
+    text-align: center;
+    color: #6b7280;
+    margin-bottom: 16px;
+    font-size: 14px;
+}
+
+.modal-form-group {
+    margin-bottom: 16px;
+}
+
+.modal-form-group label {
+    display: none;
+}
+
+.modal-form-group input {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #e65100;
+    border-radius: 6px;
+    font-size: 14px;
+    box-sizing: border-box;
+    transition: all 0.25s ease;
+    background-color: #ffffff;
+}
+
+.modal-form-group input:focus {
+    outline: none;
+    border-color: #e65100;
+    box-shadow: 0 0 0 3px rgba(230, 81, 0, 0.15);
+}
+
+.modal-form-group input.error {
+    border-color: #dc2626 !important;
+    background-color: #fef2f2 !important;
+}
+
+.modal-form-group .field-error {
+    display: block;
+    margin-top: 6px;
+    color: #dc2626;
+    font-size: 13px;
+}
+
+.modal-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.modal-buttons button {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.25s ease;
+}
+
+.btn-primary {
+    background: #e65100;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #bf360c;
+}
+
+.btn-secondary {
+    background-color: #e5e7eb;
+    color: #1f2937;
+    border: none;
+}
+
+.btn-secondary:hover {
+    background-color: #d1d5db;
+}
+
+.success-message {
+    background: #fff3e0;
+    color: #b45309;
+    padding: 12px;
+    border-radius: 6px;
+    margin-bottom: 16px;
+    border-left: 4px solid #e65100;
+}
+
+.loading {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #e65100;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-left: 8px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}

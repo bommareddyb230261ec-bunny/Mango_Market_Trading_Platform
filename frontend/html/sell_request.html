@@ -1,0 +1,1117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sell Requests | Mango Market Trading Platform</title>
+
+    <link rel="stylesheet" href="../css/broker.css">
+
+    <script src="../js/api.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/broker.js"></script>
+</head>
+<body>
+
+<header>
+    <div class="header-container">
+        <div class="header-brand">
+            <h1>🥭 Mango Market Trading <span>Broker Portal</span></h1>
+        </div>
+        <nav class="header-nav">
+            <ul>
+                <li><a href="broker_dashboard.html" class="nav-link">Dashboard</a></li>
+                <li><a href="#" class="nav-link active btn-sell-requests">📬 SELL REQUESTS</a></li>
+                <li><a href="transactions.html" class="nav-link btn-transactions">💳 TRANSACTIONS</a></li>
+                <li><a href="#" onclick="AuthManager.logout()" class="nav-link logout-btn">🚪 Logout</a></li>
+            </ul>
+        </nav>
+    </div>
+</header>
+
+<main>
+
+    <section class="dashboard-hero">
+        <div class="hero-content">
+            <h2>Incoming Farmer Sell Requests</h2>
+            <p>Review and manage farmer offers</p>
+        </div>
+    </section>
+
+    <section class="requests-section">
+        <div class="section-wrapper">
+            <div class="section-header">
+                <h2>📋 All Requests</h2>
+                <div class="filter-controls">
+                    <select id="status-filter" onchange="SellRequestManager.filterByStatus()" class="filter-select">
+                        <option value="">All Status</option>
+                        <option value="PENDING">⏳ Pending</option>
+                        <option value="ACCEPTED">✅ Accepted</option>
+                        <option value="REJECTED">❌ Rejected</option>
+                    </select>
+                    <input type="text" id="search-box" placeholder="🔍 Search farmer name..." onkeyup="SellRequestManager.searchRequests()" class="search-input">
+                </div>
+            </div>
+
+            <div class="requests-grid" id="requests-grid">
+                <!-- Requests will be populated here -->
+                <div class="loading-card">
+                    <p>Loading requests...</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="request-details" class="details-section" style="display: none;">
+        <div class="section-wrapper">
+            <button class="btn-back" onclick="SellRequestManager.closeDetails()">← Back to Requests</button>
+            
+            <div class="details-card">
+                <div class="details-header">
+                    <h2>Request Details</h2>
+                </div>
+                
+                <div class="details-content">
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <label>Farmer Name</label>
+                            <p id="detail-farmer-name">-</p>
+                        </div>
+                        <div class="detail-item">
+                            <label>Mango Variety</label>
+                            <p id="detail-variety">-</p>
+                        </div>
+                        <div class="detail-item">
+                            <label>Quantity Offered</label>
+                            <p id="detail-quantity">-</p>
+                        </div>
+                        <div class="detail-item">
+                            <label>Preferred Date</label>
+                            <p id="detail-date">-</p>
+                        </div>
+                        <div class="detail-item">
+                            <label>Request Date</label>
+                            <p id="detail-request-date">-</p>
+                        </div>
+                        <div class="detail-item">
+                            <label>Order ID</label>
+                            <p id="detail-order-id">-</p>
+                        </div>
+                        <div class="detail-item">
+                            <label>Rejection Reason</label>
+                            <p id="detail-rejection-reason">-</p>
+                        </div>
+                        <div class="detail-item">
+                            <label>Status</label>
+                            <p id="detail-status">-</p>
+                        </div>
+                    </div>
+
+                    <div class="action-section" id="action-section">
+                        <!-- Action buttons will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+</main>
+
+<!-- ===== ACCEPT SELL REQUEST MODAL ===== -->
+<div id="acceptSellModal" class="modal modal-medium">
+    <div class="modal-content">
+        <span class="modal-close" onclick="SellRequestManager.closeModal()">&times;</span>
+        <h3>Accept Sell Request</h3>
+        <div id="acceptModalBody">
+            <p><strong>Farmer:</strong> <span id="acceptFarmerName">-</span></p>
+            <p><strong>Variety:</strong> <span id="acceptVariety">-</span></p>
+            <p><strong>Quantity (Tons):</strong> <span id="acceptQuantity">-</span></p>
+
+            <div class="form-group">
+                <label>Agreed Price (₹/kg)</label>
+                <input type="number" id="acceptAgreedPrice" step="0.01" min="0" placeholder="Leave blank to use market price">
+                <small class="help-text">Leave blank to use current market price if available.</small>
+            </div>
+
+            <div class="form-group">
+                <label>Expected Delivery Date</label>
+                <input type="date" id="acceptExpectedDate">
+            </div>
+
+            <div class="modal-actions">
+                <button id="acceptConfirmBtn" class="btn-success" onclick="SellRequestManager.confirmAcceptFromModal()">Confirm Accept</button>
+                <button id="acceptCancelBtn" class="btn-secondary" onclick="SellRequestManager.closeModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<footer>
+    <div class="footer-content">
+        <p>&copy; 2026 Mango Market Trading Platform</p>
+        <p>Building trust in agricultural trading</p>
+    </div>
+</footer>
+
+<style>
+    /* ====== MODERN E-COMMERCE STYLE ====== */
+    
+    :root {
+        --primary-orange: #e65100;
+        --primary-orange-dark: #bf360c;
+        --secondary-orange: #ff9800;
+        --light-orange: #fff3e0;
+        --accent-green: #4caf50;
+        --accent-red: #d32f2f;
+        --accent-blue: #1976d2;
+        --text-dark: #1a1a1a;
+        --text-medium: #424242;
+        --text-light: #757575;
+        --bg-body: #f8f9fa;
+        --white: #ffffff;
+        --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        --card-shadow-hover: 0 8px 40px rgba(0, 0, 0, 0.15);
+    }
+
+    /* ===== MODAL STYLES ===== */
+    .modal {
+        position: fixed;
+        inset: 0;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0, 0, 0, 0.45);
+        z-index: 10000;
+        padding: 2rem;
+    }
+
+    .modal.modal-small .modal-content {
+        max-width: 400px;
+    }
+
+    .modal.modal-medium .modal-content {
+        max-width: 520px;
+    }
+
+    .modal-content {
+        background: var(--white);
+        border-radius: 12px;
+        padding: 2rem;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        width: 100%;
+        position: relative;
+        animation: slideIn 0.3s ease;
+    }
+
+    @keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateY(-30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .modal-content h3 {
+        margin-bottom: 1.5rem;
+        font-size: 1.5rem;
+        color: var(--primary-orange);
+    }
+
+    .modal-close {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        font-size: 1.8rem;
+        color: var(--text-light);
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .modal-close:hover {
+        color: var(--primary-orange);
+        transform: scale(1.2);
+    }
+
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-group label {
+        display: block;
+        font-weight: 600;
+        color: var(--text-dark);
+        margin-bottom: 0.5rem;
+    }
+
+    .form-group input {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1.5px solid #e0e0e0;
+        border-radius: 8px;
+        font-size: 1rem;
+        font-family: inherit;
+        transition: all 0.3s ease;
+    }
+
+    .form-group input:focus {
+        outline: none;
+        border-color: var(--primary-orange);
+        box-shadow: 0 0 0 3px rgba(230, 81, 0, 0.1);
+    }
+
+    .help-text {
+        display: block;
+        color: var(--text-light);
+        font-size: 0.85rem;
+        margin-top: 0.5rem;
+    }
+
+    .modal-actions {
+        display: flex;
+        gap: 1rem;
+        margin-top: 2rem;
+        justify-content: flex-end;
+    }
+
+    .btn-success,
+    .btn-secondary {
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 1rem;
+    }
+
+    .btn-success {
+        background: var(--accent-green);
+        color: white;
+    }
+
+    .btn-success:hover {
+        background: #45a049;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(76, 175, 80, 0.3);
+    }
+
+    .btn-secondary {
+        background: #e0e0e0;
+        color: var(--text-dark);
+    }
+
+    .btn-secondary:hover {
+        background: #bdbdbd;
+        transform: translateY(-2px);
+    }
+
+
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+        background-color: var(--bg-body);
+        color: var(--text-dark);
+        line-height: 1.6;
+    }
+
+    /* ====== HEADER ====== */
+    header {
+        background: var(--white);
+        border-bottom: 1px solid #e8e8e8;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        box-shadow: var(--card-shadow);
+    }
+
+    .header-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 1rem 2rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 2rem;
+    }
+
+    .header-brand h1 {
+        font-size: 1.8rem;
+        color: var(--primary-orange);
+        font-weight: 800;
+    }
+
+    .header-brand h1 span {
+        background: linear-gradient(135deg, var(--primary-orange), var(--secondary-orange));
+        color: white;
+        padding: 0.4rem 0.8rem;
+        border-radius: 6px;
+        font-size: 0.6rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        margin-left: 0.5rem;
+    }
+
+    .header-nav ul {
+        list-style: none;
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .nav-link {
+        color: var(--text-dark);
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 0.95rem;
+        padding: 0.7rem 1.2rem;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+        display: inline-block;
+    }
+
+    .nav-link:hover {
+        background-color: var(--light-orange);
+        color: var(--primary-orange);
+    }
+
+    .nav-link.active {
+        background: linear-gradient(135deg, var(--primary-orange), var(--secondary-orange));
+        color: white;
+        font-weight: 700;
+    }
+
+    .nav-link.btn-transactions {
+        background: linear-gradient(135deg, var(--accent-blue), #2196f3);
+        color: white;
+        font-weight: 700;
+    }
+
+    .nav-link.btn-transactions:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(25, 118, 210, 0.3);
+    }
+
+    .logout-btn {
+        color: var(--accent-red);
+    }
+
+    .logout-btn:hover {
+        background-color: rgba(211, 47, 47, 0.1);
+    }
+
+    /* ====== MAIN ====== */
+    main {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 2rem;
+    }
+
+    /* ====== HERO ====== */
+    .dashboard-hero {
+        background: linear-gradient(135deg, var(--primary-orange), var(--secondary-orange));
+        color: white;
+        padding: 3rem 2rem;
+        border-radius: 16px;
+        margin-bottom: 3rem;
+        box-shadow: 0 10px 40px rgba(230, 81, 0, 0.2);
+    }
+
+    .hero-content h2 {
+        font-size: 2.5rem;
+        margin-bottom: 0.5rem;
+        font-weight: 800;
+    }
+
+    .hero-content p {
+        font-size: 1.1rem;
+        opacity: 0.95;
+    }
+
+    /* ====== SECTIONS ====== */
+    .section-wrapper {
+        background: var(--white);
+        border-radius: 16px;
+        padding: 2.5rem;
+        box-shadow: var(--card-shadow);
+        transition: all 0.3s ease;
+    }
+
+    .section-wrapper:hover {
+        box-shadow: var(--card-shadow-hover);
+    }
+
+    .section-header {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 2rem;
+        align-items: center;
+        margin-bottom: 2rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 2px solid var(--light-orange);
+    }
+
+    .section-header h2 {
+        font-size: 1.8rem;
+        color: var(--primary-orange);
+        font-weight: 800;
+    }
+
+    .filter-controls {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+    }
+
+    .filter-select,
+    .search-input {
+        padding: 0.7rem 1rem;
+        border: 1.5px solid #e0e0e0;
+        border-radius: 8px;
+        font-size: 0.95rem;
+        font-family: inherit;
+        transition: all 0.3s ease;
+    }
+
+    .filter-select:focus,
+    .search-input:focus {
+        outline: none;
+        border-color: var(--primary-orange);
+        box-shadow: 0 0 0 3px rgba(230, 81, 0, 0.1);
+    }
+
+    .search-input {
+        min-width: 250px;
+    }
+
+    /* ====== REQUESTS GRID ====== */
+    .requests-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 2rem;
+    }
+
+    .request-card {
+        background: linear-gradient(135deg, #fafafa, white);
+        border: 1.5px solid #f0f0f0;
+        border-radius: 12px;
+        overflow: hidden;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .request-card:hover {
+        border-color: var(--primary-orange);
+        box-shadow: 0 10px 30px rgba(230, 81, 0, 0.15);
+        transform: translateY(-4px);
+    }
+
+    .card-header-request {
+        background: linear-gradient(135deg, var(--light-orange), #ffe0b2);
+        padding: 1.5rem;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .farmer-name {
+        font-size: 1.3rem;
+        font-weight: 700;
+        color: var(--primary-orange-dark);
+        margin: 0;
+    }
+
+    .card-body-request {
+        padding: 1.5rem;
+        flex: 1;
+    }
+
+    .request-meta {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .meta-item {
+        font-size: 0.85rem;
+    }
+
+    .meta-label {
+        color: var(--text-light);
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+    }
+
+    .meta-value {
+        color: var(--text-dark);
+        font-weight: 700;
+        font-size: 1rem;
+    }
+
+    .status-badge {
+        display: inline-block;
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        font-weight: 700;
+        text-transform: uppercase;
+    }
+
+    .status-badge.pending {
+        background: #fff3cd;
+        color: #856404;
+    }
+
+    .status-badge.accepted {
+        background: #d4edda;
+        color: #155724;
+    }
+
+    .status-badge.rejected {
+        background: #f8d7da;
+        color: #721c24;
+    }
+
+    .card-footer-request {
+        padding: 1rem 1.5rem;
+        background: #fafafa;
+        border-top: 1px solid #f0f0f0;
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .loading-card {
+        grid-column: 1 / -1;
+        text-align: center;
+        padding: 3rem;
+        color: var(--text-light);
+    }
+
+    /* ====== DETAILS SECTION ====== */
+    .details-section {
+        margin-top: 2rem;
+    }
+
+    .btn-back {
+        background: var(--light-orange);
+        color: var(--primary-orange);
+        border: none;
+        padding: 0.7rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        margin-bottom: 1.5rem;
+        transition: all 0.3s ease;
+    }
+
+    .btn-back:hover {
+        background: var(--primary-orange);
+        color: white;
+    }
+
+    .details-card {
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: var(--card-shadow);
+    }
+
+    .details-header {
+        background: linear-gradient(135deg, var(--primary-orange), var(--secondary-orange));
+        color: white;
+        padding: 2rem;
+    }
+
+    .details-header h2 {
+        font-size: 1.8rem;
+        font-weight: 800;
+        margin: 0;
+    }
+
+    .details-content {
+        padding: 2.5rem;
+        background: white;
+    }
+
+    .detail-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 2rem;
+        margin-bottom: 2rem;
+    }
+
+    .detail-item {
+        background: var(--light-orange);
+        padding: 1.5rem;
+        border-radius: 12px;
+        border-left: 4px solid var(--primary-orange);
+    }
+
+    .detail-item label {
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: var(--primary-orange);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        display: block;
+        margin-bottom: 0.5rem;
+    }
+
+    .detail-item p {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: var(--text-dark);
+        margin: 0;
+        white-space: normal;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+    }
+
+    .action-section {
+        border-top: 1px solid #e0e0e0;
+        padding-top: 2rem;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .btn-accept,
+    .btn-reject {
+        padding: 1rem 2rem;
+        border: none;
+        border-radius: 8px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        flex: 1;
+        min-width: 150px;
+    }
+
+    .btn-accept {
+        background: var(--accent-green);
+        color: white;
+    }
+
+    .btn-accept:hover {
+        background: #45a049;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(76, 175, 80, 0.3);
+    }
+
+    .btn-reject {
+        background: var(--accent-red);
+        color: white;
+    }
+
+    .btn-reject:hover {
+        background: #c62828;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(211, 47, 47, 0.3);
+    }
+
+    /* ====== FOOTER ====== */
+    footer {
+        background: var(--text-dark);
+        color: var(--white);
+        text-align: center;
+        padding: 2rem;
+        margin-top: 4rem;
+    }
+
+    .footer-content p {
+        margin: 0.5rem 0;
+    }
+
+    /* ====== RESPONSIVE ====== */
+    @media (max-width: 1024px) {
+        .header-container {
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .section-header {
+            grid-template-columns: 1fr;
+        }
+
+        main {
+            padding: 1.5rem;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .header-nav ul {
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .nav-link {
+            width: 100%;
+            text-align: center;
+        }
+
+        .requests-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .filter-controls {
+            flex-direction: column;
+            justify-content: flex-start;
+        }
+
+        .search-input {
+            min-width: 100%;
+        }
+
+        .action-buttons {
+            flex-direction: column;
+        }
+
+        .btn-accept,
+        .btn-reject {
+            width: 100%;
+        }
+    }
+</style>
+
+<script>
+// =====================================================
+// SELL REQUEST MANAGER
+// =====================================================
+const SellRequestManager = {
+    currentBroker: null,
+    allSellRequests: [],
+    filteredRequests: [],
+    currentRequestId: null,
+    API_BASE: typeof API_BASE_URL !== 'undefined' ? API_BASE_URL : 
+              (window.location.protocol + '//' + window.location.hostname + ':5000'),
+
+    async init() {
+        console.log('🚀 Initializing Sell Request Manager...');
+        try {
+            const userDetails = AuthManager.getUserDetails();
+            if (!userDetails || userDetails.role !== 'BROKER') {
+                window.location.href = 'broker_login.html';
+                return;
+            }
+            await this.loadSellRequests();
+            this.setupEventListeners();
+            console.log('✅ Sell Request Manager loaded successfully');
+        } catch (error) {
+            console.error('❌ Initialization failed:', error);
+            this.showError('Failed to initialize: ' + error.message);
+        }
+    },
+
+    async loadSellRequests() {
+        try {
+            const response = await fetch(this.API_BASE + '/broker/dashboard', {
+                method: 'GET',
+                headers: APIClient.getHeaders(),
+                credentials: 'include'
+            });
+
+            if (!response.ok) throw new Error(`API Error: ${response.status}`);
+            const data = await response.json();
+            if (!data.success) throw new Error(data.error || 'Failed to load');
+
+            this.allSellRequests = data.sell_requests || [];
+            this.filteredRequests = [...this.allSellRequests];
+            this.renderRequests();
+        } catch (error) {
+            console.error('❌ Load error:', error);
+            throw error;
+        }
+    },
+
+    renderRequests() {
+        const grid = document.getElementById('requests-grid');
+        if (!grid) return;
+
+        if (this.filteredRequests.length === 0) {
+            grid.innerHTML = '<div class="loading-card"><p>No requests found</p></div>';
+            return;
+        }
+
+        grid.innerHTML = this.filteredRequests.map(request => `
+            <div class="request-card" onclick="SellRequestManager.showDetails(${request.id})">
+                <div class="card-header-request">
+                    <p class="farmer-name">${request.farmer_name || `Farmer #${request.farmer_id}`}</p>
+                </div>
+                <div class="card-body-request">
+                    <div class="request-meta">
+                        <div class="meta-item">
+                            <div class="meta-label">Variety</div>
+                            <div class="meta-value">${request.variety}</div>
+                        </div>
+                        <div class="meta-item">
+                            <div class="meta-label">Quantity</div>
+                            <div class="meta-value">${request.quantity_tons.toFixed(2)} tons</div>
+                        </div>
+                    </div>
+                    <div class="request-meta">
+                        <div class="meta-item">
+                            <div class="meta-label">Preferred Date</div>
+                            <div class="meta-value">${this.formatDate(request.preferred_date)}</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer-request">
+                    <span class="status-badge ${request.status.toLowerCase()}">
+                        ${request.status}
+                    </span>
+                </div>
+            </div>
+        `).join('');
+    },
+
+    showDetails(requestId) {
+        const request = this.allSellRequests.find(r => r.id === requestId);
+        if (!request) return;
+
+        document.getElementById('detail-farmer-name').textContent = request.farmer_name || `Farmer #${request.farmer_id}`;
+        document.getElementById('detail-variety').textContent = request.variety;
+        document.getElementById('detail-quantity').textContent = request.quantity_tons.toFixed(2) + ' tons';
+        document.getElementById('detail-date').textContent = this.formatDate(request.preferred_date);
+        document.getElementById('detail-status').textContent = request.status;
+        document.getElementById('detail-request-date').textContent = this.formatDate(request.created_at || request.date);
+
+        // Show Order ID when available (display '-' when not present)
+        const orderEl = document.getElementById('detail-order-id');
+        if (orderEl) orderEl.textContent = request.order_id || '-';
+
+        // Show Rejection Reason when present (display 'No reason provided' when empty)
+        const rejectEl = document.getElementById('detail-rejection-reason');
+        if (rejectEl) rejectEl.textContent = request.rejection_reason && request.rejection_reason.trim() !== '' ? request.rejection_reason : 'No reason provided';
+
+        const actionSection = document.getElementById('action-section');
+        if (request.status === 'PENDING') {
+            actionSection.innerHTML = `
+                <div class="action-buttons">
+                    <button class="btn-accept" onclick="SellRequestManager.acceptRequest(${request.id})">✅ Accept Request</button>
+                    <button class="btn-reject" onclick="SellRequestManager.rejectRequest(${request.id})">❌ Reject Request</button>
+                </div>
+            `;
+        } else if (request.status === 'REJECTED') {
+            // Keep the details area clean: reason is shown in the boxed field above.
+            actionSection.innerHTML = `
+                <p style="text-align: center; color: var(--text-light);">This request has been rejected</p>
+            `;
+        } else {
+            actionSection.innerHTML = `<p style="text-align: center; color: var(--text-light);">This request has been ${request.status.toLowerCase()}</p>`;
+        }
+
+        document.getElementById('requests-grid').parentElement.parentElement.style.display = 'none';
+        document.getElementById('request-details').style.display = 'block';
+        window.scrollTo(0, 0);
+    },
+
+    closeDetails() {
+        document.getElementById('requests-grid').parentElement.parentElement.style.display = 'block';
+        document.getElementById('request-details').style.display = 'none';
+    },
+
+    async acceptRequest(requestId) {
+        // Find the request details
+        const request = this.allSellRequests.find(r => r.id === requestId);
+        if (!request) {
+            this.showError('Request not found');
+            return;
+        }
+
+        // Set modal data
+        document.getElementById('acceptFarmerName').textContent = request.farmer_name || `Farmer #${request.farmer_id}`;
+        document.getElementById('acceptVariety').textContent = request.variety;
+        document.getElementById('acceptQuantity').textContent = request.quantity_tons.toFixed(2);
+        
+        // Set default delivery date to preferred date
+        const dateInput = document.getElementById('acceptExpectedDate');
+        dateInput.value = request.preferred_date ? request.preferred_date.split('T')[0] : '';
+        
+        // Clear price input
+        document.getElementById('acceptAgreedPrice').value = '';
+        
+        // Store request ID for confirmation
+        this.currentRequestId = requestId;
+        
+        // Show the modal
+        this.openModal();
+    },
+
+    openModal() {
+        const modal = document.getElementById('acceptSellModal');
+        if (modal) {
+            modal.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+    },
+
+    closeModal() {
+        const modal = document.getElementById('acceptSellModal');
+        if (modal) {
+            modal.style.display = 'none';
+            document.body.style.overflow = '';
+            this.currentRequestId = null;
+        }
+    },
+
+    async confirmAcceptFromModal() {
+        if (!this.currentRequestId) return;
+
+        const agreedPriceInput = document.getElementById('acceptAgreedPrice');
+        const expectedDateInput = document.getElementById('acceptExpectedDate');
+        
+        const agreedPrice = agreedPriceInput.value.trim();
+        const expectedDate = expectedDateInput.value;
+
+        let payload = { status: 'ACCEPTED' };
+
+        if (agreedPrice !== '') {
+            const val = Number(agreedPrice);
+            if (isNaN(val) || val <= 0) {
+                this.showError('Please enter a valid agreed price');
+                return;
+            }
+            payload.agreed_price = val;
+        }
+
+        if (expectedDate) {
+            payload.expected_date = expectedDate;
+        }
+
+        // Attach session token as fallback if available
+        const token = localStorage.getItem('session_token');
+        if (token) payload.session_token = token;
+
+        try {
+            const response = await fetch(this.API_BASE + `/broker/request/${this.currentRequestId}/status`, {
+                method: 'POST',
+                headers: APIClient.getHeaders(),
+                credentials: 'include',
+                body: JSON.stringify(payload)
+            });
+            if (!response.ok) throw new Error(`API Error: ${response.status}`);
+            const data = await response.json();
+            if (data.success) {
+                this.showSuccess('Request accepted!');
+                this.closeModal();
+                await this.loadSellRequests();
+                this.closeDetails();
+            } else {
+                this.showError('Error: ' + (data.message || 'Failed to accept request'));
+            }
+        } catch (error) {
+            this.showError('Error: ' + error.message);
+        }
+    },
+
+    async rejectRequest(requestId) {
+        const reason = prompt('Enter rejection reason:');
+        if (!reason) return;
+        try {
+            const payload = { status: 'REJECTED', reason: reason };
+            const token = localStorage.getItem('session_token');
+            if (token) payload.session_token = token;
+
+            const response = await fetch(this.API_BASE + `/broker/request/${requestId}/status`, {
+                method: 'POST',
+                headers: APIClient.getHeaders(),
+                credentials: 'include',
+                body: JSON.stringify(payload)
+            });
+            if (!response.ok) throw new Error(`API Error: ${response.status}`);
+            const data = await response.json();
+            if (data.success) {
+                this.showSuccess('Request rejected');
+                await this.loadSellRequests();
+                this.closeDetails();
+            }
+        } catch (error) {
+            this.showError('Error: ' + error.message);
+        }
+    },
+
+    filterByStatus() {
+        const status = document.getElementById('status-filter').value;
+        this.filteredRequests = status 
+            ? this.allSellRequests.filter(r => r.status === status.toUpperCase())
+            : [...this.allSellRequests];
+        this.renderRequests();
+    },
+
+    searchRequests() {
+        const term = document.getElementById('search-box').value.toLowerCase();
+        const status = document.getElementById('status-filter').value;
+        this.filteredRequests = this.allSellRequests.filter(r => {
+            const matchesSearch = (r.farmer_name || `Farmer #${r.farmer_id}`).toLowerCase().includes(term);
+            const matchesStatus = !status || r.status === status.toUpperCase();
+            return matchesSearch && matchesStatus;
+        });
+        this.renderRequests();
+    },
+
+    formatDate(dateString) {
+        if (!dateString) return 'N/A';
+        return new Date(dateString).toLocaleDateString('en-IN', {
+            year: 'numeric', month: 'short', day: 'numeric'
+        });
+    },
+
+    showSuccess(message) {
+        const notification = document.createElement('div');
+        notification.textContent = '✅ ' + message;
+        notification.style.cssText = `position: fixed; top: 20px; right: 20px; background: #4caf50; color: white; padding: 1rem 1.5rem; border-radius: 8px; z-index: 1000;`;
+        document.body.appendChild(notification);
+        setTimeout(() => notification.remove(), 3000);
+    },
+
+    showError(message) {
+        const notification = document.createElement('div');
+        notification.textContent = '❌ ' + message;
+        notification.style.cssText = `position: fixed; top: 20px; right: 20px; background: #d32f2f; color: white; padding: 1rem 1.5rem; border-radius: 8px; z-index: 1000;`;
+        document.body.appendChild(notification);
+        setTimeout(() => notification.remove(), 4000);
+    },
+
+    setupEventListeners() {
+        const navLinks = document.querySelectorAll('.nav-link');
+        navLinks.forEach(link => {
+            if (link.getAttribute('onclick') !== 'AuthManager.logout()') {
+                link.addEventListener('click', () => {
+                    navLinks.forEach(l => l.classList.remove('active'));
+                    link.classList.add('active');
+                });
+            }
+        });
+
+        // Modal close on background click
+        const modal = document.getElementById('acceptSellModal');
+        if (modal) {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    this.closeModal();
+                }
+            });
+        }
+    }
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+    SellRequestManager.init();
+});
+</script>
+
+</body>
+</html>

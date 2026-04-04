@@ -1,0 +1,17 @@
+flask>=2.3
+flask-cors>=4.0
+flask-sqlalchemy>=3.0
+sqlalchemy>=2.0
+pymysql>=1.1.0
+itsdangerous>=2.1
+cryptography>=40.0
+werkzeug>=2.2
+pytest>=7.0
+pytest-cov>=4.0
+fastapi
+uvicorn
+motor
+pydantic
+email-validator
+python-dotenv
+starlette

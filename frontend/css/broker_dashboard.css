@@ -1,0 +1,213 @@
+/* ====== MODERN E-COMMERCE STYLE ====== */
+
+:root {
+    --primary-orange: #e65100;
+    --primary-orange-dark: #bf360c;
+    --primary-orange-light: #ff8a50;
+    --secondary-orange: #ff9800;
+    --light-orange: #fff3e0;
+    --accent-green: #4caf50;
+    --accent-red: #d32f2f;
+    --accent-blue: #1976d2;
+    --text-dark: #1a1a1a;
+    --text-medium: #424242;
+    --text-light: #757575;
+    --bg-body: #f8f9fa;
+    --white: #ffffff;
+    --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    --card-shadow-hover: 0 8px 40px rgba(0, 0, 0, 0.15);
+}
+
+/* ===== Modal overlay & content ===== */
+.modal {
+    position: fixed;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,0.45);
+    z-index: 10000;
+    padding: 2rem;
+}
+
+.modal-content {
+    background: var(--white);
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    box-shadow: var(--card-shadow);
+    width: 100%;
+    max-width: 520px;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+    background-color: var(--bg-body);
+    color: var(--text-dark);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* ====== HEADER ====== */
+header {
+    background: var(--white);
+    border-bottom: 1px solid #e8e8e8;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: var(--card-shadow);
+}
+
+.header-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 1rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 2rem;
+}
+
+.header-brand h1 {
+    font-size: 1.8rem;
+    color: var(--primary-orange);
+    font-weight: 800;
+    letter-spacing: -0.5px;
+}
+
+.header-brand h1 span {
+    background: linear-gradient(135deg, var(--primary-orange), var(--secondary-orange));
+    color: white;
+    padding: 0.4rem 0.8rem;
+    border-radius: 6px;
+    font-size: 0.6rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-left: 0.5rem;
+}
+
+.header-nav ul {
+    list-style: none;
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.nav-link {
+    color: var(--text-dark);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.95rem;
+    padding: 0.7rem 1.2rem;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    display: inline-block;
+}
+
+.nav-link:hover {
+    background-color: var(--light-orange);
+    color: var(--primary-orange);
+}
+
+.nav-link:focus-visible { outline: 3px solid rgba(230,81,0,0.12); border-radius:8px; }
+
+.nav-link.active {
+    background-color: var(--light-orange);
+    color: var(--primary-orange);
+}
+
+.nav-link.btn-sell-requests {
+    background: linear-gradient(135deg, var(--primary-orange), var(--secondary-orange));
+    color: white;
+    font-weight: 700;
+}
+
+.nav-link.btn-sell-requests:hover {
+    color: white;
+    background: linear-gradient(135deg, var(--primary-orange-dark), var(--primary-orange));
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(230, 81, 0, 0.3);
+}
+
+.nav-link.btn-transactions {
+    background: linear-gradient(135deg, var(--accent-blue), #2196f3);
+    color: white;
+    font-weight: 700;
+}
+
+.nav-link.btn-transactions:hover {
+    color: white;
+    background: linear-gradient(135deg, #1565c0, var(--accent-blue));
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(25, 118, 210, 0.3);
+}
+
+/* New Weighment button style */
+.nav-link.btn-weighment {
+    background: linear-gradient(135deg, var(--accent-green), #66bb6a);
+    color: white;
+    font-weight: 700;
+}
+
+.nav-link.btn-weighment:hover {
+    color: white;
+    background: linear-gradient(135deg, #43a047, var(--accent-green));
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(67, 160, 71, 0.25);
+}
+
+.logout-btn {
+    color: var(--accent-red);
+}
+
+.logout-btn:hover {
+    background-color: rgba(211, 47, 47, 0.1);
+    color: var(--accent-red);
+}
+
+/* ====== MAIN ====== */
+main {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+/* ====== HERO SECTION ====== */
+.dashboard-hero {
+    background: linear-gradient(135deg, var(--primary-orange), var(--secondary-orange));
+    color: white;
+    padding: 3rem 2rem;
+    border-radius: 16px;
+    margin-bottom: 3rem;
+    box-shadow: 0 10px 40px rgba(230, 81, 0, 0.2);
+}
+
+.hero-content h2 {
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+    font-weight: 800;
+}
+
+.hero-content p {
+    font-size: 1.1rem;
+    opacity: 0.95;
+}
+
+/* ====== SECTIONS ====== */
+.section-wrapper {
+    background: var(--white);
+    border-radius: 16px;
+    padding: 2.5rem;
+    box-shadow: var(--card-shadow);
+    transition: all 0.3s ease;
+}

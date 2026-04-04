@@ -1,0 +1,9 @@
+/* Farmer Registration Styles */
+h2 { color: #2e7d32 !important; }
+.section-header { color: #2e7d32; border-bottom: 1px solid #c8e6c9; }
+button { background: #2e7d32 !important; }
+button:hover { background: #1b5e20 !important; }
+.btn-grey { background-color: #6b7280 !important; }
+.btn-green { background-color: #2e7d32 !important; }
+a { color: #2e7d32; }
+input:focus { border-color: #2e7d32 !important; }

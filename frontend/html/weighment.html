@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New Weighment | Mango Market Trading Platform</title>
+
+    <link rel="stylesheet" href="../css/broker.css">
+
+    <script src="../js/api.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/broker.js"></script>
+
+    <style>
+        :root {
+            --primary-orange: #e65100;
+            --secondary-orange: #ff9800;
+            --light-orange: #fff3e0;
+            --accent-green: #4caf50;
+            --accent-red: #d32f2f;
+            --text-dark: #1a1a1a;
+            --text-light: #757575;
+            --bg-body: #f8f9fa;
+            --white: #ffffff;
+            --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-dark);
+            line-height: 1.6;
+        }
+
+        header {
+            background: var(--white);
+            border-bottom: 1px solid #e8e8e8;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: var(--card-shadow);
+        }
+
+        .header-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .header-brand h1 {
+            font-size: 1.8rem;
+            color: var(--primary-orange);
+            font-weight: 800;
+        }
+
+        .header-nav ul {
+            list-style: none;
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .nav-link {
+            color: var(--text-dark);
+            text-decoration: none;
+            font-weight: 600;
+            padding: 0.7rem 1.2rem;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .nav-link:hover {
+            background-color: var(--light-orange);
+            color: var(--primary-orange);
+        }
+
+        .nav-link.active {
+            background: var(--primary-orange);
+            color: white;
+        }
+
+        main {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .dashboard-hero {
+            background: linear-gradient(135deg, var(--primary-orange), var(--secondary-orange));
+            color: white;
+            padding: 3rem 2rem;
+            border-radius: 16px;
+            margin-bottom: 3rem;
+            box-shadow: 0 10px 40px rgba(230, 81, 0, 0.2);
+        }
+
+        .hero-content h2 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            font-weight: 800;
+        }
+
+        .hero-content p {
+            font-size: 1.1rem;
+            opacity: 0.95;
+        }
+
+        .form-container {
+            background: var(--white);
+            border-radius: 16px;
+            padding: 2.5rem;
+            box-shadow: var(--card-shadow);
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        .form-title {
+            font-size: 1.8rem;
+            color: var(--primary-orange);
+            margin-bottom: 2rem;
+            font-weight: 800;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+
+        input[type="text"],
+        input[type="number"],
+        input[type="date"],
+        textarea,
+        select {
+            width: 100%;
+            padding: 0.8rem 1rem;
+            border: 1.5px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+            font-family: 'Inter', sans-serif;
+        }
+
+        input[type="text"]:focus,
+        input[type="number"]:focus,
+        input[type="date"]:focus,
+        textarea:focus,
+        select:focus {
+            outline: none;
+            border-color: var(--primary-orange);
+            box-shadow: 0 0 0 3px rgba(230, 81, 0, 0.1);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+
+        .btn-submit {
+            background: var(--primary-orange);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+
+        .btn-submit:hover {
+            background: #d84315;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(230, 81, 0, 0.3);
+        }
+
+        /* Success animation for submit button */
+        .btn-submit.animate-success {
+            background: #4caf50 !important;
+            transform: translateY(-2px) scale(0.98);
+            transition: transform 220ms ease, background 220ms ease;
+        }
+        .btn-submit.animate-success::after {
+            content: ' ✓';
+            margin-left: 8px;
+            font-weight: 700;
+        }
+
+        .btn-toggle-price {
+            background: var(--secondary-orange);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .btn-toggle-price:hover {
+            background: var(--primary-orange);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(230, 81, 0, 0.2);
+        }
+
+        .final-price-locked {
+            background-color: #f5f5f5;
+        }
+
+        .final-price-locked::placeholder {
+            color: var(--text-light);
+        }
+
+        .btn-back {
+            background: var(--light-orange);
+            color: var(--primary-orange);
+            border: none;
+            padding: 0.7rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 1.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .btn-back:hover {
+            background: #ffe0b2;
+        }
+
+        footer {
+            background: var(--text-dark);
+            color: var(--white);
+            text-align: center;
+            padding: 2rem;
+            margin-top: 4rem;
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .hero-content h2 {
+                font-size: 1.8rem;
+            }
+
+            .form-container {
+                padding: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="header-container">
+        <div class="header-brand">
+            <h1>🥭 Mango Market Trading</h1>
+        </div>
+        <nav class="header-nav">
+            <ul>
+                <li><a href="broker_dashboard.html" class="nav-link">Dashboard</a></li>
+                <li><a href="transactions.html" class="nav-link btn-transactions">💳 TRANSACTIONS</a></li>
+                <li><a href="sell_request.html" class="nav-link btn-sell-requests">📬 SELL REQUESTS</a></li>
+                <li><a href="#" onclick="AuthManager.logout()" class="nav-link logout-btn">🚪 Logout</a></li>
+            </ul>
+        </nav>
+    </div>
+</header>
+
+<main>
+
+    <section class="dashboard-hero">
+        <div class="hero-content">
+            <h2>Record New Weighment</h2>
+            <p>Document and process new mango weighment</p>
+        </div>
+    </section>
+    <!-- Removed static error message bar. All errors will show as toast notifications only. -->
+
+    <div class="form-container">
+        <button class="btn-back" onclick="window.history.back()">← Back</button>
+        
+        <h3 class="form-title">📊 New Weighment Form</h3>
+
+        <form id="weighment-form">
+            <div class="form-group">
+                <label for="order-id">Order ID</label>
+                <input type="text" id="order-id" placeholder="Order ID (generated when request is accepted)" />
+                <small style="display:block; margin-top:6px; color:var(--text-light);">If you opened this page from an accepted sell request the Order ID will be auto-filled. Enter an Order ID and leave the field to auto-fill Farmer & fix Mango Variety.</small>
+                <div id="order-lookup-status" style="margin-top:8px; color:var(--text-light); font-size:0.95rem;"></div>
+            </div>
+
+            <div class="form-group">
+                <label for="farmer-name">Farmer Name</label>
+                <input type="text" id="farmer-name" placeholder="Enter farmer name (optional)">
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="mango-variety">Mango Variety</label>
+                    <select id="mango-variety" required>
+                        <option value="">Select variety</option>
+                        <option value="Alphonso">Alphonso</option>
+                        <option value="Kesar">Kesar</option>
+                        <option value="Langra">Langra</option>
+                        <option value="Dussehri">Dussehri</option>
+                        <option value="Himsagar">Himsagar</option>
+                        <option value="Chaunsa">Chaunsa</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="weighment-date">Weighment Date</label>
+                    <input type="date" id="weighment-date" required>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="total-weight">Total Weight (tons)</label>
+                    <input type="number" id="total-weight" required placeholder="0.00" step="0.01" min="0">
+                </div>
+
+                <div class="form-group">
+                    <label for="quality-grade">Quality Grade</label>
+                    <select id="quality-grade" required>
+                        <option value="">Select grade</option>
+                        <option value="A">Grade A (Premium)</option>
+                        <option value="B">Grade B (Good)</option>
+                        <option value="C">Grade C (Standard)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0.5rem;">
+                    <label for="final-price" style="margin: 0;">Final Price (₹ per kg)</label>
+                    <button type="button" id="change-price-btn" class="btn-toggle-price" style="display: none;">✏️ Edit Price</button>
+                </div>
+                <input type="number" id="final-price" name="final_price" placeholder="Enter final price per kg" step="0.01" min="0" required />
+                <small id="price-help-text" style="display:block; margin-top:6px; color:var(--text-light);">Enter the final negotiated price per kg to be recorded for this weighment.</small>
+            </div>
+
+            <div class="form-group">
+                <label for="remarks">Remarks</label>
+                <textarea id="remarks" placeholder="Any additional comments or observations"></textarea>
+            </div>
+
+            <button type="submit" class="btn-submit">✅ Record Weighment</button>
+        </form>
+    </div>
+
+</main>
+
+<footer>
+    <p>&copy; 2026 Mango Market Trading Platform</p>
+    <p>Secure & Transparent Transaction Management</p>
+</footer>
+
+<script>
+// NOTE: Fix for notification flash bug:
+// Root cause: stale or preemptive top-right error toasts were shown before the server finalized submission.
+// - Pre-submit checks (previous 'orderUsed' flag) showed top errors immediately and lingering notifications could flash.
+// - Some network probes / checks could also surface transient errors.
+// Fix: clear any existing notifications on submit start, avoid showing top toast before server confirms errors,
+// show inline status for pre-submission checks, and show top-right toasts only upon server-confirmed responses.
+async function handleWeighmentSubmit(event) {
+    event.preventDefault();
+
+    const submitBtn = document.querySelector('.btn-submit[type="submit"]');
+    // Prevent duplicate submissions: if a submit is already in progress, bail out
+    if (submitBtn && submitBtn.dataset && submitBtn.dataset.submitting === '1') {
+        console.warn('Weighment submit already in progress; ignoring duplicate submit');
+        return;
+    }
+
+    // local reference to the inline lookup status element (was previously scoped only in DOMContentLoaded)
+    const orderLookupStatus = document.getElementById('order-lookup-status');
+
+
+    // Clear previous UI notifications to avoid flash of stale messages (fixes: temporary error toast appearing from earlier state)
+    clearNotifications();
+
+    // Prevent submitting if this order is already known to be used (safeguard for Enter key or manual submission)
+    if (submitBtn && submitBtn.dataset && submitBtn.dataset.orderUsed === '1') {
+        // Show inline status only — do NOT show a top toast here to avoid confusing users on submit click.
+        if (orderLookupStatus) {
+            orderLookupStatus.style.color = 'var(--accent-red)';
+            orderLookupStatus.textContent = 'Order ID has already been used. This order cannot be recorded again.';
+        }
+        if (submitBtn) { submitBtn.disabled = true; }
+        return;
+    }
+
+    if (submitBtn) { submitBtn.disabled = true; submitBtn.dataset.origText = submitBtn.textContent; submitBtn.textContent = '⏳ Recording...'; submitBtn.dataset.submitting = '1'; }
+
+    const orderId = (document.getElementById('order-id').value || '').trim();
+    const farmerName = (document.getElementById('farmer-name').value || '').trim();
+    const variety = document.getElementById('mango-variety').value;
+    const date = document.getElementById('weighment-date').value;
+    const weight = parseFloat(document.getElementById('total-weight').value);
+    const grade = document.getElementById('quality-grade').value;
+    const remarks = document.getElementById('remarks').value;
+
+    const finalPrice = parseFloat(document.getElementById('final-price').value) || 0;
+
+    // If an Order ID is present, verify it has not already been used (prevent server-side 409 for new orders)
+    if (orderId) {
+        try {
+            const check = await verifyOrderIdBeforeSubmit(orderId.trim().toLowerCase());
+            if (check.error) {
+                // non-fatal: allow submission but warn
+                console.warn('Order verification failed; proceeding with submission');
+            } else if (check.used) {
+                // Mark inline error and disable submit; do NOT show top toast (error to be shown only after server confirms duplicate)
+                if (orderLookupStatus) {
+                    orderLookupStatus.style.color = 'var(--accent-red)';
+                    orderLookupStatus.textContent = 'Order ID has already been used. This order cannot be recorded again.';
+                }
+                if (submitBtn) { submitBtn.disabled = true; submitBtn.dataset.orderUsed = '1'; }
+                return;
+            } else if (check.found) {
+                // If we found a matching accepted sell request, and farmer/variety fields are empty, autofill for convenience
+                const found = check.found;
+                if (!farmerName && found.farmer_name) document.getElementById('farmer-name').value = found.farmer_name;
+                if (found.variety) {
+                    const varietyEl = document.getElementById('mango-variety');
+                    const prevInjected = Array.from(varietyEl.options).find(o => o.dataset && o.dataset.injected === '1');
+                    if (prevInjected) prevInjected.remove();
+                    let existingOpt = Array.from(varietyEl.options).find(o => o.value === found.variety);
+                    if (!existingOpt) {
+                        const opt = document.createElement('option'); opt.value = found.variety; opt.text = found.variety; opt.dataset.injected = '1'; varietyEl.insertBefore(opt, varietyEl.firstChild);
+                    }
+                    varietyEl.value = found.variety;
+                    varietyEl.disabled = true;
+                }
+            }
+        } catch (err) {
+            console.error('Order ID verification error:', err);
+            // continue with submission if verification fails unexpectedly
+        }
+    }
+
+    // Basic validation
+    if (!variety) { showError('Please select a mango variety'); resetSubmitBtn(submitBtn); return; }
+    if (!weight || weight <= 0) { showError('Please enter a valid weight (tons)'); resetSubmitBtn(submitBtn); return; }
+    if (!finalPrice || finalPrice <= 0) { showError('Please enter a valid final price (₹ per kg)'); resetSubmitBtn(submitBtn); return; }
+    if (!farmerName) { showError('Please enter farmer name'); resetSubmitBtn(submitBtn); return; }
+
+    const payload = {
+        order_id: orderId || undefined,
+        farmer_name: farmerName || undefined,
+        mango_variety: variety,
+        weighment_date: date || undefined,
+        actual_weight_tons: weight,
+        quality_grade: grade || undefined,
+        final_price_per_kg: finalPrice,
+        remarks: remarks || undefined
+    };
+
+    // First quick health-check so we can show a friendly message if backend isn't running
+    // Removed persistent network error message at the top. Only show error as toast if submission fails.
+
+    try {
+        // Ensure we have a reachable backend base (handles auto-detection of active port)
+        const base = await ensureApiReady();
+        if (!base) { showError('Network error. Backend is not reachable. Please start the backend.'); resetSubmitBtn(submitBtn); return; }
+
+        const resp = await fetch(`${base}/broker/weighment`, {
+            method: 'POST',
+            headers: Object.assign({'Content-Type': 'application/json'}, APIClient.getHeaders()),
+            credentials: 'include',
+            body: JSON.stringify(payload)
+        });
+
+        let data = null;
+        try { data = await resp.json(); } catch (e) {
+            console.error('Failed to parse weighment response JSON:', e);
+            console.log('Response status:', resp.status);
+            console.log('Response headers:', {
+                'content-type': resp.headers.get('content-type'),
+                'content-length': resp.headers.get('content-length')
+            });
+        }
+
+        console.log('[Weighment Submit] Response:', {
+            status: resp.status,
+            ok: resp.ok,
+            hasData: !!data,
+            success: data?.success,
+            dataKeys: data ? Object.keys(data) : 'null'
+        });
+
+        // Check if submission was successful
+        // Success = HTTP 200 + response body with success: true
+        const isSuccessful = resp.ok && data && data.success === true;
+
+        if (!isSuccessful) {
+            const err = (data && (data.message || data.error)) || `Failed to record weighment (status ${resp.status})`;
+            console.error('[Weighment Submit] Error response:', { status: resp.status, error: err, data });
+
+            // If 401, make message actionable
+            if (resp.status === 401) {
+                showError('Unauthorized. Please login as a broker before recording weighment.');
+                resetSubmitBtn(submitBtn);
+                return;
+            } else if (resp.status === 409) {
+                // Duplicate order_id — show clear message and disable submit to prevent retries
+                const msg = 'Your order ID is already used. Please contact the market owner.';
+                // Show top-right error only after server confirms duplicate
+                showError(msg);
+                if (orderLookupStatus) { orderLookupStatus.style.color = 'var(--accent-red)'; orderLookupStatus.textContent = msg; }
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.dataset.orderUsed = '1';
+                    // Clear submitting flag since action is blocked
+                    if (submitBtn.dataset && submitBtn.dataset.submitting) delete submitBtn.dataset.submitting;
+                    // Make it visually clear to the user that the action is blocked
+                    if (submitBtn.dataset && submitBtn.dataset.origText) submitBtn.textContent = '⚠️ ' + submitBtn.dataset.origText;
+                    else submitBtn.textContent = '⚠️ Order used';
+                }
+                // Do not call resetSubmitBtn here - keep the disabled state to prevent accidental retries
+                return;
+            } else {
+                showError(err);
+                resetSubmitBtn(submitBtn);
+                return;
+            }
+        } else {
+            // On success, ensure any previously set 'orderUsed' flag is cleared so user can submit again
+            if (submitBtn) { delete submitBtn.dataset.orderUsed; }
+            console.log('[Weighment Submit] Success confirmed via response:', { success: data.success, message: data.message });
+        }
+
+        // Clear any lingering error notifications and show a friendly success message
+        clearNotifications();
+
+        // Update inline order lookup status (if visible)
+        if (orderLookupStatus) {
+            orderLookupStatus.style.color = 'var(--accent-green)';
+            orderLookupStatus.textContent = 'Your weighment has been recorded.';
+        }
+        // Show success toast and finalize UI (server confirmed)
+        showSuccess('Successfully stored your weighment');
+
+        // Make submit button show confirmed state with animation
+        if (submitBtn) {
+            submitBtn.classList.add('animate-success');
+            submitBtn.textContent = '✓ Recorded';
+            submitBtn.disabled = true;
+        }
+
+        // Redirect to transactions after brief pause so user can see confirmation
+        setTimeout(() => window.location.href = 'transactions.html', 1200);
+    } catch (err) {
+        console.error('Weighment submit error:', err);
+        // Try a server-side verification (useful when server processed the request but the browser couldn't receive the response)
+        let verified = false;
+        try {
+            if (orderId) {
+                const check = await verifyOrderIdBeforeSubmit(orderId.trim().toLowerCase());
+                if (!check.error && check.used) {
+                    verified = true;
+                }
+            }
+        } catch (verErr) {
+            console.error('Post-error verification failed:', verErr);
+        }
+
+        if (verified) {
+            // Show a friendly confirmation instead of a network error
+            clearNotifications();
+            if (orderLookupStatus) {
+                orderLookupStatus.style.color = 'var(--accent-green)';
+                orderLookupStatus.textContent = 'Your weighment appears to have been recorded (server processed).';
+            }
+            showSuccess('It seems your weighment was recorded despite a network issue. Redirecting...');
+            if (submitBtn) {
+                submitBtn.classList.add('animate-success');
+                submitBtn.textContent = '✓ Recorded';
+                submitBtn.disabled = true;
+            }
+            setTimeout(() => window.location.href = 'transactions.html', 1200);
+            return;
+        }
+
+        showError('Network error while recording weighment');
+        resetSubmitBtn(submitBtn);
+    }
+}
+
+function resetSubmitBtn(btn) {
+    if (!btn) return;
+    btn.disabled = false;
+    if (btn.dataset && btn.dataset.origText) btn.textContent = btn.dataset.origText;
+    // Clear submitting flag so future submits are allowed
+    if (btn.dataset && btn.dataset.submitting) delete btn.dataset.submitting;
+}
+
+function clearNotifications() {
+    const existing = document.querySelectorAll('.notification');
+    existing.forEach(n => n.remove());
+}
+
+function showSuccess(message) {
+    // Remove any existing notifications first
+    clearNotifications();
+    const notification = document.createElement('div');
+    notification.className = 'notification success';
+    notification.textContent = '✅ ' + message;
+    notification.style.cssText = `position: fixed; top: 20px; right: 20px; background: #4caf50; color: white; padding: 1rem 1.5rem; border-radius: 8px; z-index: 1000;`;
+    document.body.appendChild(notification);
+    setTimeout(() => notification.remove(), 3000);
+}
+
+function showError(message) {
+    // Clear any existing notifications (prevent stale messages), then show this error
+    clearNotifications();
+
+    const notification = document.createElement('div');
+    notification.className = 'notification error';
+    notification.textContent = '❌ ' + message;
+    notification.style.cssText = `position: fixed; top: 20px; right: 20px; background: #d32f2f; color: white; padding: 1rem 1.5rem; border-radius: 8px; z-index: 1000;`;
+    document.body.appendChild(notification);
+    setTimeout(() => notification.remove(), 4000);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('weighment-date').value = today;
+    // Set minimum date to prevent selecting past dates
+    document.getElementById('weighment-date').min = today;
+
+    // Handle "Change Price" button
+    const changePriceBtn = document.getElementById('change-price-btn');
+    const finalPriceEl = document.getElementById('final-price');
+    
+    if (changePriceBtn) {
+        changePriceBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            
+            if (finalPriceEl.disabled) {
+                // Currently locked - unlock it
+                finalPriceEl.disabled = false;
+                finalPriceEl.classList.remove('final-price-locked');
+                finalPriceEl.focus();
+                changePriceBtn.textContent = '🔒 Lock Price';
+                
+                const priceHelpText = document.getElementById('price-help-text');
+                if (priceHelpText) {
+                    const originalPrice = changePriceBtn.dataset.originalPrice;
+                    priceHelpText.textContent = `Original price: ₹${originalPrice}/kg. You can now edit the price if needed.`;
+                }
+            } else {
+                // Currently unlocked - lock it back to original
+                const originalPrice = changePriceBtn.dataset.originalPrice;
+                finalPriceEl.value = originalPrice;
+                finalPriceEl.disabled = true;
+                finalPriceEl.classList.add('final-price-locked');
+                changePriceBtn.textContent = '✏️ Edit Price';
+                
+                const priceHelpText = document.getElementById('price-help-text');
+                if (priceHelpText) {
+                    priceHelpText.textContent = `Price locked to: ₹${originalPrice}/kg`;
+                }
+            }
+        });
+    }
+
+    // Final price input — attach explicit submit listener for reliability
+    const orderLookupStatus = document.getElementById('order-lookup-status');
+    const formEl = document.getElementById('weighment-form');
+    if (formEl) {
+        // Ensure handler is bound even if inline onsubmit fails in some environments
+        formEl.removeEventListener('submit', handleWeighmentSubmit);
+        formEl.addEventListener('submit', handleWeighmentSubmit);
+    }
+
+    // Order ID lookup: on blur or Enter, fetch broker dashboard and match order_id
+    const orderInput = document.getElementById('order-id');
+    orderInput?.addEventListener('blur', (e) => {
+        const orderId = e.target.value && e.target.value.trim();
+        if (orderId) lookupOrderById(orderId);
+        else {
+            // cleared: reset status and inputs
+            if (orderLookupStatus) { orderLookupStatus.textContent = ''; }
+            const varietyEl = document.getElementById('mango-variety');
+            if (varietyEl) {
+                const injected = Array.from(varietyEl.options).find(o => o.dataset && o.dataset.injected === '1');
+                if (injected) injected.remove();
+                varietyEl.disabled = false;
+                varietyEl.selectedIndex = 0;
+            }
+            const farmerNameEl = document.getElementById('farmer-name');
+            if (farmerNameEl) farmerNameEl.value = '';
+            
+            // Clear price field and hide edit button
+            const finalPriceEl = document.getElementById('final-price');
+            const changePriceBtn = document.getElementById('change-price-btn');
+            const priceHelpText = document.getElementById('price-help-text');
+            
+            if (finalPriceEl) {
+                finalPriceEl.value = '';
+                finalPriceEl.disabled = false;
+                finalPriceEl.classList.remove('final-price-locked');
+            }
+            if (changePriceBtn) {
+                changePriceBtn.style.display = 'none';
+                changePriceBtn.textContent = '✏️ Edit Price';
+                delete changePriceBtn.dataset.originalPrice;
+            }
+            if (priceHelpText) {
+                priceHelpText.textContent = 'Enter the final negotiated price per kg to be recorded for this weighment.';
+            }
+            
+            const submitBtn = document.querySelector('.btn-submit');
+            if (submitBtn) { submitBtn.disabled = false; delete submitBtn.dataset.orderUsed; }
+        }
+    });
+
+    orderInput?.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            const orderId = e.target.value && e.target.value.trim();
+            if (orderId) lookupOrderById(orderId);
+        }
+    });
+
+    // Clear lookup status when the user manually clears the field
+    orderInput?.addEventListener('input', (e) => {
+        const v = e.target.value && e.target.value.trim();
+        if (!v) {
+            if (orderLookupStatus) orderLookupStatus.textContent = '';
+            const submitBtn = document.querySelector('.btn-submit');
+            if (submitBtn) { submitBtn.disabled = false; delete submitBtn.dataset.orderUsed; }
+        }
+    });
+
+    // Verify order_id before submitting to avoid false-positive duplicate errors from server
+    // Expose as global so top-level handlers can call it
+    window.verifyOrderIdBeforeSubmit = async function(orderId) {
+        try {
+            const base = await ensureApiReady();
+            if (!base) return { error: true };
+            const resp = await fetch(`${base}/broker/dashboard`, {
+                method: 'GET',
+                headers: APIClient.getHeaders(),
+                credentials: 'include'
+            });
+            if (!resp.ok) return { error: true };
+            const data = await resp.json();
+            const used = Array.isArray(data.weighments) && data.weighments.find(w => w.order_id && String(w.order_id).toLowerCase() === String(orderId).toLowerCase());
+            const found = Array.isArray(data.sell_requests) && data.sell_requests.find(r => r.order_id && String(r.order_id).toLowerCase() === String(orderId).toLowerCase());
+            return { error: false, used: !!used, found: found || null };
+        } catch (err) {
+            console.error('verifyOrderIdBeforeSubmit error:', err);
+            return { error: true };
+        }
+    }
+
+    // Expose as global so other code can reuse it
+    window.lookupOrderById = async function(orderId) {
+        if (!orderId) return;
+        if (orderLookupStatus) { orderLookupStatus.style.color = ''; orderLookupStatus.textContent = 'Looking up order...'; }
+
+        try {
+            const base = await ensureApiReady();
+            if (!base) { if (orderLookupStatus) orderLookupStatus.textContent = 'Network error while looking up order.'; return; }
+
+            const response = await fetch(`${base}/broker/dashboard`, {
+                method: 'GET',
+                headers: APIClient.getHeaders(),
+                credentials: 'include'
+            });
+
+            if (!response.ok) {
+                if (response.status === 401) {
+                    orderLookupStatus.textContent = 'Unauthorized. Please login as broker to auto-fill order details.';
+                    return;
+                }
+                orderLookupStatus.textContent = `Lookup failed (status ${response.status}).`;
+                return;
+            }
+
+            const data = await response.json();
+            if (!data.success || !Array.isArray(data.sell_requests)) {
+                orderLookupStatus.textContent = 'Order lookup failed.';
+                return;
+            }
+
+            // First: check if this order_id has already been recorded as a weighment
+            const usedWeighment = Array.isArray(data.weighments) ? data.weighments.find(w => w.order_id && String(w.order_id).toLowerCase() === String(orderId).toLowerCase()) : null;
+
+            const found = data.sell_requests.find(r => r.order_id && String(r.order_id).toLowerCase() === String(orderId).toLowerCase());
+
+            const farmerNameEl = document.getElementById('farmer-name');
+            const varietyEl = document.getElementById('mango-variety');
+            const submitBtn = document.querySelector('.btn-submit');
+
+            if (usedWeighment) {
+                // Order already used -> show error and disable submit
+                if (orderLookupStatus) { orderLookupStatus.style.color = 'var(--accent-red)'; orderLookupStatus.textContent = 'Order ID has already been used. This order cannot be recorded again.'; }
+                // Populate farmer & variety if possible to help identify record, but prevent submission
+                if (farmerNameEl) farmerNameEl.value = usedWeighment.farmer_name || '';
+                if (varietyEl && usedWeighment.mango_variety) {
+                    // remove previously injected option and insert used variety for visibility
+                    const prevInjected = Array.from(varietyEl.options).find(o => o.dataset && o.dataset.injected === '1');
+                    if (prevInjected) prevInjected.remove();
+                    let existingOpt = Array.from(varietyEl.options).find(o => o.value === usedWeighment.mango_variety);
+                    if (!existingOpt) {
+                        const opt = document.createElement('option');
+                        opt.value = usedWeighment.mango_variety;
+                        opt.text = usedWeighment.mango_variety;
+                        opt.dataset.injected = '1';
+                        varietyEl.insertBefore(opt, varietyEl.firstChild);
+                    }
+                    varietyEl.value = usedWeighment.mango_variety;
+                    varietyEl.disabled = true;
+                }
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.dataset.orderUsed = '1';
+                }
+
+            } else if (found) {
+                // Valid accepted sell_request and not yet used — autofill & lock variety and price
+                if (farmerNameEl) farmerNameEl.value = found.farmer_name || '';
+                if (varietyEl) {
+                    const v = found.variety || '';
+                    const prevInjected = Array.from(varietyEl.options).find(o => o.dataset && o.dataset.injected === '1');
+                    if (prevInjected) prevInjected.remove();
+
+                    let existingOpt = Array.from(varietyEl.options).find(o => o.value === v);
+                    if (existingOpt) {
+                        varietyEl.value = v;
+                    } else if (v) {
+                        const opt = document.createElement('option');
+                        opt.value = v;
+                        opt.text = v;
+                        opt.selected = true;
+                        opt.dataset.injected = '1';
+                        varietyEl.insertBefore(opt, varietyEl.firstChild);
+                    }
+
+                    varietyEl.disabled = true;
+                }
+
+                // Auto-fill and lock final price if available
+                const finalPriceEl = document.getElementById('final-price');
+                const changePriceBtn = document.getElementById('change-price-btn');
+                const priceHelpText = document.getElementById('price-help-text');
+                
+                if (found.agreed_price && finalPriceEl) {
+                    finalPriceEl.value = found.agreed_price.toFixed(2);
+                    finalPriceEl.disabled = true;
+                    finalPriceEl.classList.add('final-price-locked');
+                    
+                    if (changePriceBtn) {
+                        changePriceBtn.style.display = 'inline-block';
+                        changePriceBtn.dataset.originalPrice = found.agreed_price;
+                    }
+                    
+                    if (priceHelpText) {
+                        priceHelpText.textContent = `Price auto-filled from order: ₹${found.agreed_price}/kg`;
+                    }
+                }
+
+                if (orderLookupStatus) { orderLookupStatus.style.color = 'var(--accent-green)'; orderLookupStatus.textContent = `Order found: ${found.order_id} — variety & price fixed.`; }
+
+                // Ensure submit is enabled
+                if (submitBtn) { submitBtn.disabled = false; delete submitBtn.dataset.orderUsed; }
+
+            } else {
+                // not found: clear locks and allow manual input (keep original behavior)
+                if (farmerNameEl) farmerNameEl.value = '';
+                if (varietyEl) {
+                    const injected = Array.from(varietyEl.options).find(o => o.dataset && o.dataset.injected === '1');
+                    if (injected) injected.remove();
+                    varietyEl.disabled = false;
+                    varietyEl.selectedIndex = 0; // reset to placeholder
+                }
+                
+                // Clear price and show input
+                const finalPriceEl = document.getElementById('final-price');
+                const changePriceBtn = document.getElementById('change-price-btn');
+                const priceHelpText = document.getElementById('price-help-text');
+                
+                if (finalPriceEl) {
+                    finalPriceEl.value = '';
+                    finalPriceEl.disabled = false;
+                    finalPriceEl.classList.remove('final-price-locked');
+                }
+                if (changePriceBtn) {
+                    changePriceBtn.style.display = 'none';
+                    delete changePriceBtn.dataset.originalPrice;
+                }
+                if (priceHelpText) {
+                    priceHelpText.textContent = 'Enter the final negotiated price per kg to be recorded for this weighment.';
+                }
+                
+                if (orderLookupStatus) {
+                    orderLookupStatus.style.color = 'var(--text-light)';
+                    orderLookupStatus.textContent = 'Order not found — please enter details manually.';
+                }
+
+                if (submitBtn) { submitBtn.disabled = false; delete submitBtn.dataset.orderUsed; }
+            }
+        } catch (err) {
+            console.error('Order lookup error:', err);
+            if (orderLookupStatus) orderLookupStatus.textContent = 'Network error while looking up order.';
+        }
+    }
+});
+</script>
+
+</body>
+</html>

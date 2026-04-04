@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transactions | Mango Market Trading Platform</title>
+
+    <link rel="stylesheet" href="../css/broker.css">
+    <link rel="stylesheet" href="../css/transactions.css">
+
+    <script src="../js/api.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/broker.js"></script>
+</head>
+<body>
+
+<header>
+    <div class="header-container">
+        <div class="header-brand">
+            <h1> Mango Market Trading <span>Broker Portal</span></h1>
+        </div>
+        <nav class="header-nav">
+            <ul>
+                <li><a href="broker_dashboard.html" class="nav-link">Dashboard</a></li>
+                <li><a href="#" class="nav-link active btn-transactions">💳 TRANSACTIONS</a></li>
+                <li><a href="sell_request.html" class="nav-link btn-sell-requests">📬 SELL REQUESTS</a></li>
+                <li><a href="#" onclick="AuthManager.logout()" class="nav-link logout-btn">🚪 Logout</a></li>
+            </ul>
+        </nav>
+    </div>
+</header>
+
+<main>
+
+    <section class="dashboard-hero">
+        <div class="hero-content">
+            <h2>Transactions & Weighment History</h2>
+            <p>Track all your market transactions</p>
+        </div>
+    </section>
+
+    <section class="transactions-section">
+        <div class="section-wrapper">
+            <div class="section-header">
+                <h2> All Transactions</h2>
+                <a href="weighment.html" class="btn-new-weighment">+ Create New Weighment</a>
+                <div class="filter-controls">
+                    <select id="transaction-status-filter" onchange="TransactionManager.filterByTransactionStatus()" class="filter-select">
+                        <option value="">All Transaction Status</option>
+                        <option value="PENDING"> Pending</option>
+                        <option value="COMPLETED"> Completed</option>
+                        <option value="FAILED"> Failed</option>
+                    </select>
+                    <input type="text" id="search-box" placeholder=" Search farmer..." onkeyup="TransactionManager.searchTransactions()" class="search-input">
+                </div>
+            </div>
+
+            <div class="transactions-grid" id="transactions-grid">
+                <!-- Transactions will be populated here -->
+                <div class="loading-card">
+                    <p>Loading transactions...</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="transaction-details" class="details-section">
+        <div class="section-wrapper">
+            <button class="btn-back" onclick="TransactionManager.closeDetails()"> Back to Transactions</button>
+            
+            <div class="details-card">
+                <div class="details-header">
+                    <h2>Transaction Details</h2>
+                </div>
+                
+                <div class="details-content">
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <label>Farmer Name</label>
+                            <p id="detail-farmer-name">-</p>
+                        </div>
+                        <div class="detail-item">
+                            <label>Date</label>
+                            <p id="detail-date">-</p>
+                        </div>
+                        <div class="detail-item">
+                            <label>Variety</label>
+                            <p id="detail-variety">-</p>
+                        </div>
+                        <div class="detail-item">
+                            <label>Weight</label>
+                            <p id="detail-weight">-</p>
+                        </div>
+                        <div class="detail-item">
+                            <label>Price per KG</label>
+                            <p id="detail-price">-</p>
+                        </div>
+                        <div class="detail-item">
+                            <label>Total Amount</label>
+                            <p id="detail-total">-</p>
+                        </div>
+                        <div class="detail-item">
+                            <label>Commission</label>
+                            <p id="detail-commission">-</p>
+                        </div>
+                        <div class="detail-item">
+                            <label>Net Payable</label>
+                            <p id="detail-net-payable">-</p>
+                        </div>
+                        <div class="detail-item">
+                            <label>Payment Status</label>
+                            <p id="detail-payment-status">-</p>
+                        </div>
+                        <div class="detail-item">
+                            <label>Transaction Status</label>
+                            <p id="detail-transaction-status" style="display: flex; align-items: center; gap: 8px;">-</p>
+                        </div>
+                    </div>
+
+                    <div class="action-section">
+                        <button class="btn-print" onclick="TransactionManager.printCurrentTransaction()"> Print Receipt</button>
+                        <button class="btn-payment" onclick="TransactionManager.openPaymentModal()"> 💳 Process Payment</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="payment-modal" class="payment-modal" style="display: none;">
+        <div class="payment-modal-content">
+            <div class="payment-modal-header">
+                <h2>Process Payment</h2>
+                <button class="payment-modal-close" onclick="TransactionManager.closePaymentModal()">&times;</button>
+            </div>
+            
+            <div class="payment-modal-body">
+                <!-- Farmer Details Section -->
+                <div class="payment-section">
+                    <h3 class="payment-section-title">Farmer Details</h3>
+                    <div class="payment-detail-grid">
+                        <div class="payment-detail-item">
+                            <label>Farmer Name</label>
+                            <p id="payment-farmer-name">-</p>
+                        </div>
+                        <div class="payment-detail-item">
+                            <label>Phone Number</label>
+                            <p id="payment-farmer-phone">-</p>
+                        </div>
+                        <div class="payment-detail-item">
+                            <label>Order ID</label>
+                            <p id="payment-order-id">-</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Transaction Amount Section -->
+                <div class="payment-section">
+                    <h3 class="payment-section-title">Transaction Amount</h3>
+                    <div class="payment-detail-grid">
+                        <div class="payment-detail-item">
+                            <label>Total Amount</label>
+                            <p id="payment-total-amount" class="payment-amount">₹0.00</p>
+                        </div>
+                        <div class="payment-detail-item">
+                            <label>Commission</label>
+                            <p id="payment-commission">₹0.00</p>
+                        </div>
+                        <div class="payment-detail-item">
+                            <label>Net Payable to Farmer</label>
+                            <p id="payment-net-payable" class="payment-amount-primary">₹0.00</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bank Details Section -->
+                <div class="payment-section">
+                    <h3 class="payment-section-title">Bank Account Details</h3>
+                    <div class="payment-detail-grid">
+                        <div class="payment-detail-item">
+                            <label>Account Holder Name</label>
+                            <p id="payment-account-holder">-</p>
+                        </div>
+                        <div class="payment-detail-item">
+                            <label>Account Number</label>
+                            <p id="payment-account-number" class="account-number">-</p>
+                        </div>
+                        <div class="payment-detail-item">
+                            <label>IFSC Code</label>
+                            <p id="payment-ifsc-code">-</p>
+                        </div>
+                        <div class="payment-detail-item">
+                            <label>Bank Name</label>
+                            <p id="payment-bank-name">-</p>
+                        </div>
+                        <div class="payment-detail-item">
+                            <label>Branch Name</label>
+                            <p id="payment-branch-name">-</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Payment Confirmation Section -->
+                <div class="payment-section">
+                    <div class="payment-checkbox">
+                        <input type="checkbox" id="payment-confirm" onchange="TransactionManager.togglePaymentButton()">
+                        <label for="payment-confirm">I confirm that all details are correct and authorize this payment</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="payment-modal-footer">
+                <button class="btn-cancel" onclick="TransactionManager.closePaymentModal()">Cancel</button>
+                <button class="btn-confirm-payment" id="confirm-payment-btn" onclick="TransactionManager.confirmPayment()" disabled>Confirm & Process Payment</button>
+            </div>
+        </div>
+    </section>
+
+</main>
+
+<footer>
+    <p>&copy; 2026 Mango Market Trading Platform</p>
+    <p>All transactions are securely recorded</p>
+</footer>
+
+<script src="../js/transactions.js"></script>
+
+</body>
+</html>

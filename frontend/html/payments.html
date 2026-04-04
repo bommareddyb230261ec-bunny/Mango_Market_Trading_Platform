@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Process Payment | Mango Market Trading Platform</title>
+
+    <link rel="stylesheet" href="../css/broker.css">
+    <link rel="stylesheet" href="../css/transactions.css">
+
+    <script src="../js/api.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/broker.js"></script>
+
+    <style>
+        .payment-page-header {
+            background: linear-gradient(135deg, #1976d2, #1565c0);
+            color: white;
+            padding: 2rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .payment-page-header h2 {
+            font-size: 2rem;
+            margin: 0;
+            font-weight: 800;
+        }
+
+        .payment-page-header h3 {
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+
+        .back-link {
+            display: inline-block;
+            color: white;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin-bottom: 1rem;
+            cursor: pointer;
+            border: none;
+        }
+
+        .back-link:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .payment-form-container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        .payment-form-section {
+            margin-bottom: 2.5rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .payment-form-section:last-child {
+            border-bottom: none;
+        }
+
+        .payment-form-section h3 {
+            font-size: 1.3rem;
+            color: #e65100;
+            font-weight: 800;
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .detail-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .detail-item {
+            background: #f8f9fa;
+            padding: 1.2rem;
+            border-radius: 8px;
+            border-left: 4px solid #e65100;
+        }
+
+        .detail-item label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #757575;
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+            letter-spacing: 0.5px;
+        }
+
+        .detail-item p {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #1a1a1a;
+            margin: 0;
+        }
+
+        .amount-highlight {
+            background: #fff3e0;
+            border-left-color: #ff9800 !important;
+            padding: 1.5rem;
+        }
+
+        .amount-highlight p {
+            font-size: 1.6rem;
+            color: #e65100;
+        }
+
+        .confirmation-section {
+            background: #fffbea;
+            border: 2px solid #ffd54f;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin: 2rem 0;
+        }
+
+        .confirmation-section label {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin: 0;
+            cursor: pointer;
+        }
+
+        .confirmation-section input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .payment-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 2px solid #f0f0f0;
+        }
+
+        .btn-cancel {
+            padding: 0.9rem 2rem;
+            background: #f0f0f0;
+            color: #1a1a1a;
+            border: none;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-cancel:hover {
+            background: #e0e0e0;
+        }
+
+        .btn-confirm-payment {
+            padding: 0.9rem 2rem;
+            background: #4caf50;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-confirm-payment:hover:not(:disabled) {
+            background: #45a049;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+        }
+
+        .btn-confirm-payment:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        @media (max-width: 768px) {
+            .payment-page-header {
+                flex-direction: column;
+                text-align: center;
+                gap: 1rem;
+            }
+
+            .detail-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .payment-actions {
+                flex-direction: column;
+            }
+
+            .btn-cancel, .btn-confirm-payment {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="header-container">
+        <div class="header-brand">
+            <h1> Mango Market Trading <span>Broker Portal</span></h1>
+        </div>
+        <nav class="header-nav">
+            <ul>
+                <li><a href="broker_dashboard.html" class="nav-link">Dashboard</a></li>
+                <li><a href="transactions.html" class="nav-link">Transactions</a></li>
+                <li><a href="sell_request.html" class="nav-link">Sell Requests</a></li>
+                <li><a href="#" onclick="AuthManager.logout()" class="nav-link"> Logout</a></li>
+            </ul>
+        </nav>
+    </div>
+</header>
+
+<main>
+
+    <button type="button" id="back-to-transactions-btn" class="back-link"> ← Back to Transactions</button>
+
+    <div class="payment-page-header">
+        <div>
+            <h2>💳 Process Payment</h2>
+            <h3>Complete the payment transaction</h3>
+        </div>
+    </div>
+
+    <form class="payment-form-container" id="payment-form">
+        
+        <!-- Farmer Details Section -->
+        <div class="payment-form-section">
+            <h3>Farmer Details</h3>
+            <div class="detail-grid">
+                <div class="detail-item">
+                    <label>Farmer Name</label>
+                    <p id="payment-farmer-name">-</p>
+                </div>
+                <div class="detail-item">
+                    <label>Phone Number</label>
+                    <p id="payment-farmer-phone">-</p>
+                </div>
+                <div class="detail-item">
+                    <label>Order ID</label>
+                    <p id="payment-order-id">-</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Transaction Amount Section -->
+        <div class="payment-form-section">
+            <h3>Transaction Amount</h3>
+            <div class="detail-grid">
+                <div class="detail-item">
+                    <label>Total Amount</label>
+                    <p id="payment-total-amount">₹0.00</p>
+                </div>
+                <div class="detail-item">
+                    <label>Commission</label>
+                    <p id="payment-commission">₹0.00</p>
+                </div>
+                <div class="detail-item amount-highlight">
+                    <label>Net Payable to Farmer</label>
+                    <p id="payment-net-payable">₹0.00</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bank Account Details Section -->
+        <div class="payment-form-section">
+            <h3>Bank Account Details</h3>
+            <div class="detail-grid">
+                <div class="detail-item">
+                    <label>Account Holder Name</label>
+                    <p id="payment-account-holder">-</p>
+                </div>
+                <div class="detail-item">
+                    <label>Account Number</label>
+                    <p id="payment-account-number">-</p>
+                </div>
+                <div class="detail-item">
+                    <label>IFSC Code</label>
+                    <p id="payment-ifsc-code">-</p>
+                </div>
+                <div class="detail-item">
+                    <label>Bank Name</label>
+                    <p id="payment-bank-name">-</p>
+                </div>
+                <div class="detail-item">
+                    <label>Branch Name</label>
+                    <p id="payment-branch-name">-</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Payment Confirmation Section -->
+        <div class="confirmation-section">
+            <label for="payment-confirm">
+                <input type="checkbox" id="payment-confirm" onchange="PaymentProcessor.togglePaymentButton()">
+                <span>I confirm that all details are correct and authorize this payment</span>
+            </label>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="payment-actions">
+            <button type="button" id="cancel-payment-btn" class="btn-cancel">Cancel</button>
+            <button type="button" id="confirm-payment-btn" class="btn-confirm-payment" disabled>Confirm & Process Payment</button>
+        </div>
+
+    </form>
+
+</main>
+
+<footer>
+    <p>&copy; 2026 Mango Market Trading Platform</p>
+    <p>All transactions are securely recorded</p>
+</footer>
+
+<script src="../js/payment_processor.js"></script>
+
+</body>
+</html>

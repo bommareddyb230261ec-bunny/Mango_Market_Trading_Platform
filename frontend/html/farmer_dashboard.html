@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Farmer Dashboard | Mango Market Platform</title>
+    <link rel="stylesheet" href="../css/farmer.css">
+    <style>
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); align-items: center; justify-content: center; }
+        .modal.show { display: flex; }
+        .modal-content { background-color: #fff; padding: 30px; border-radius: 12px; width: 400px; max-width: 90%; box-shadow: 0 10px 40px rgba(0,0,0,0.2); animation: slideIn 0.3s ease; }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(-30px); } to { opacity: 1; transform: translateY(0); } }
+        .close-modal { float: right; font-size: 28px; font-weight: bold; cursor: pointer; color: #999; transition: color 0.2s; }
+        .close-modal:hover { color: #333; }
+        .tab-nav { margin-bottom: 20px; border-bottom: 1px solid #ddd; display:flex; align-items:center; gap:12px; position:relative; padding-right:12px; }
+        .tab-btn { padding: 10px 20px; cursor: pointer; background: none; border: none; font-size: 16px; color: #4b4b4b; border-radius:6px; }
+        .tab-btn:hover { background: rgba(0,0,0,0.02); }
+        .tab-btn.active { border-bottom: 2px solid #28a745; color: #28a745; font-weight: bold; }
+        .tab-actions { display:inline-block; }
+        .top-action { padding:8px 14px; display:inline-block; text-decoration:none; background:none; color:#4b4b4b; font-weight:700; border-radius:6px; border:2px solid transparent; transition: background-color .15s, color .15s; }
+        .top-action:hover { background: rgba(0,0,0,0.03); color:#1f7a34; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        @media (max-width:700px) {
+            .tab-nav { flex-wrap:wrap; gap:8px; }
+            .tab-actions { width:100%; margin-top:8px; order:2; display:flex; justify-content:flex-start; }
+            .top-action { width:180px; text-align:center; }
+            .tab-btn { padding:8px 12px; }
+            .modal-content { width: 90%; padding: 25px; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="container nav-wrapper">
+            <div class="brand">
+                <h1>Mango Market <span>Farmer Portal</span></h1>
+            </div>
+            <nav class="nav-links">
+                <span id="welcomeUser">Welcome, Farmer</span>
+                <a href="farmer_profile.html" id="profileBtn"><span class="profile-icon">👤</span> Profile</a>
+                <a href="#" id="logoutBtn">Logout</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container content-layout">
+        
+        <div class="tab-nav">
+            <button class="tab-btn active" onclick="switchTab(event,'marketTab')">Find Markets</button>
+            <div class="tab-actions">
+                <a href="accepted.html" class="tab-btn top-action">View Accepted Requests</a>
+            </div>
+            <button class="tab-btn" onclick="switchTab(event,'historyTab')">My Requests & Payments</button>
+            <!-- Profile moved to top-right. Bank Settings removed. -->
+        </div>
+
+        <section id="marketTab" class="tab-content active">
+            <div class="search-container">
+                <h2>Find Buyers & Markets Near You</h2>
+                <form id="searchForm" class="search-form">
+                    <select id="locationSelect" class="search-select" required>
+                        <option value="" disabled selected>Loading locations...</option>
+                    </select>
+                    <button type="submit" class="btn-primary">Search Markets</button>
+                </form>
+            </div>
+
+            <div id="allVarietiesContainer" style="margin-top:16px;"> 
+                <!-- Populated with aggregate varieties available in selected district -->
+            </div>
+
+            <div class="market-list-header">
+                <h3>Available Markets</h3>
+                <div class="sort-controls">
+                    <label>Sort by:</label>
+                    <select id="priceSort" class="sort-select">
+                        <option value="price_desc">Price: High → Low</option> <option value="price_asc">Price: Low → High</option>
+                    </select>
+                </div>
+            </div>
+
+            <div id="marketListContainer" class="market-listings">
+                <div class="empty-state"><p>Select a location to view live prices.</p></div>
+            </div>
+        </section>
+
+        <section id="historyTab" class="tab-content">
+            <h3>My Sell Requests & Transaction Status</h3>
+            <table class="dashboard-table" border="1" style="width:100%; border-collapse: collapse; margin-top: 15px;">
+                <thead>
+                    <tr style="background:#f4f4f4; text-align:left;">
+                        <th style="padding:10px;">Date</th>
+                        <th style="padding:10px;">Variety</th>
+                        <th style="padding:10px;">Quantity (Tons)</th>
+                        <th style="padding:10px;">Req Status</th>
+                        <th style="padding:10px;">Market Details</th>
+                        <th style="padding:10px;">Order ID</th>
+                        <th style="padding:10px;">Rejection Reason</th>
+                        <th style="padding:10px;">Expected Delivery</th>
+                    </tr>
+                </thead>
+                <tbody id="requestsTableBody">
+                    </tbody>
+            </table>
+        </section>
+
+        <!-- Banking/Profile tab removed; use Profile link in header -->
+
+    </main>
+
+    <div id="sellModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h3>Send Sell Request</h3>
+            <p>Market: <strong id="modalMarketName"></strong></p>
+            <form id="sellRequestForm">
+                <input type="hidden" id="modalMarketId">
+                
+                <div class="form-group">
+                    <label>Mango Variety</label>
+                    <select id="mangoVariety" required style="width:100%; padding:8px; margin-bottom:6px;">
+                        <option value="">Select variety...</option>
+                    </select>
+                    <div id="selectedPricePreview" style="font-size:0.95rem; color:#2e7d32; margin-top:6px;"></div>
+                </div>
+
+                <div class="form-group">
+                    <label>Quantity (Tons)</label> <input type="number" id="quantity" step="0.1" required style="width:100%; padding:8px; margin-bottom:10px;">
+                </div>
+
+                <div class="form-group">
+                    <label>Preferred Delivery Date</label> <input type="date" id="sellDate" required style="width:100%; padding:8px; margin-bottom:10px;" min="">
+                </div>
+
+                <button type="submit" class="btn-primary" style="width:100%;">Submit Request</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div id="successModal" class="modal">
+        <div class="modal-content" style="text-align: center; max-width: 450px;">
+            <span class="close-modal" onclick="document.getElementById('successModal').classList.remove('show')">&times;</span>
+            <h3 style="color: #4caf50; margin-bottom: 1rem;">✅ Success</h3>
+            <p id="successMessage" style="font-size: 1.1rem; color: #333; margin-bottom: 2rem;">Sell request submitted successfully</p>
+            <button onclick="document.getElementById('successModal').classList.remove('show'); loadDashboard();" style="background: #4caf50; color: white; border: none; padding: 12px 24px; border-radius: 6px; font-size: 1rem; cursor: pointer; font-weight: 600;">OK</button>
+        </div>
+    </div>
+
+    <!-- Error Modal -->
+    <div id="errorModal" class="modal">
+        <div class="modal-content" style="text-align: center; max-width: 450px;">
+            <span class="close-modal" onclick="document.getElementById('errorModal').classList.remove('show')">&times;</span>
+            <h3 style="color: #d32f2f; margin-bottom: 1rem;">❌ Error</h3>
+            <p id="errorMessage" style="font-size: 1rem; color: #333; margin-bottom: 2rem; word-wrap: break-word;"></p>
+            <button onclick="document.getElementById('errorModal').classList.remove('show');" style="background: #d32f2f; color: white; border: none; padding: 12px 24px; border-radius: 6px; font-size: 1rem; cursor: pointer; font-weight: 600;">Close</button>
+        </div>
+    </div>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2026 Mango Market Trading Platform</p>
+        </div>
+    </footer>
+
+    <script src="../js/api.js"></script>
+    <script src="../js/farmer.js"></script>
+    <script>
+        // Simple Tab Switcher Script
+        function switchTab(e, tabId) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            if (e && e.target) e.target.classList.add('active');
+        }
+
+        // Mark 'View Accepted Requests' as active when on accepted.html
+        document.addEventListener('DOMContentLoaded', () => {
+            try {
+                const path = window.location.pathname.split('/').pop();
+                const acceptedLink = document.querySelector('.tab-actions a[href="accepted.html"]');
+                if (path === 'accepted.html' && acceptedLink) {
+                    acceptedLink.classList.add('active');
+                }
+            } catch (e) { /* silent */ }
+        });
+    </script>
+</body>
+</html>

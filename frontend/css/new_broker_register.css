@@ -1,0 +1,8 @@
+h2 { color: #e65100 !important; }
+.section-header { color: #e65100; border-bottom: 1px solid #ffe0b2; }
+button { background: #e65100 !important; }
+button:hover { background: #bf360c !important; }
+.btn-grey { background-color: #6b7280 !important; }
+.btn-green { background-color: #e65100 !important; }
+a { color: #e65100; }
+input:focus { border-color: #e65100 !important; }
