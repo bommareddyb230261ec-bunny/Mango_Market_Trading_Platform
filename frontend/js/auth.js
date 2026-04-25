@@ -507,7 +507,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (result.user_id) {
             // Role Check
             if (result.role !== expectedRole) {
-                showFieldError('identifier', 'This account is for ' + result.role + ', not ' + expectedRole);
+                showFieldError('identifier', 'Invalid credentials');
                 btn.disabled = false;
                 btn.innerText = originalText;
                 return;
