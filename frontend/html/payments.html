@@ -13,6 +13,73 @@
     <script src="../js/broker.js"></script>
 
     <style>
+        /* Loading Spinner Styles */
+        #loading-spinner {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #e65100;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            color: white;
+            margin-top: 20px;
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        /* UPI Payment specific styles */
+        .upi-badge {
+            display: inline-block;
+            background: #4caf50;
+            color: white;
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-left: 0.5rem;
+        }
+
+        .mobile-warning {
+            background: #fff3e0;
+            border: 2px solid #ff9800;
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            display: none;
+        }
+
+        .mobile-warning.show {
+            display: block;
+        }
+
+        .mobile-warning p {
+            margin: 0;
+            color: #e65100;
+            font-weight: 600;
+        }
+
         .payment-page-header {
             background: linear-gradient(135deg, #1976d2, #1565c0);
             color: white;
@@ -237,6 +304,12 @@
 
 <main>
 
+    <!-- Loading Spinner -->
+    <div id="loading-spinner">
+        <div class="spinner"></div>
+        <p class="loading-text">Loading payment details...</p>
+    </div>
+
     <button type="button" id="back-to-transactions-btn" class="back-link"> ← Back to Transactions</button>
 
     <div class="payment-page-header">
@@ -286,9 +359,9 @@
             </div>
         </div>
 
-        <!-- Bank Account Details Section -->
+        <!-- Bank Account / UPI Details Section -->
         <div class="payment-form-section">
-            <h3>Bank Account Details</h3>
+            <h3>UPI Payment Details <span class="upi-badge">UPI Enabled</span></h3>
             <div class="detail-grid">
                 <div class="detail-item">
                     <label>Account Holder Name</label>
@@ -328,7 +401,7 @@
         <!-- Action Buttons -->
         <div class="payment-actions">
             <button type="button" id="cancel-payment-btn" class="btn-cancel">Cancel</button>
-            <button type="button" id="confirm-payment-btn" class="btn-confirm-payment" disabled>Confirm & Process Payment</button>
+            <button type="button" id="confirm-payment-btn" class="btn-confirm-payment" disabled>Show UPI QR</button>
         </div>
 
     </form>

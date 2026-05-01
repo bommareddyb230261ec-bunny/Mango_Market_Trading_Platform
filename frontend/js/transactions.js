@@ -69,7 +69,7 @@ const TransactionManager = {
                     total_cost: ((w.actual_weight_tons || 0) * 1000 * (w.final_price_per_kg || 0)),
                     commission: 0,
                     net_payable: ((w.actual_weight_tons || 0) * 1000 * (w.final_price_per_kg || 0)),
-                    payment_status: 'N/A',
+                    payment_status: w.payment_status || 'PENDING',
                     _is_weighment: true
                 }));
                 this.allTransactions = [...this.allTransactions, ...wAsTx];

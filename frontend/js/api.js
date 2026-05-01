@@ -126,3 +126,140 @@ async function postData(endpoint, data) {
         return { success: false, message: "Network error. Is the server running? Check console for details." };
     }
 }
+
+
+// =====================================================
+// UPI PAYMENT APIs - Dynamic Farmer Payments
+// =====================================================
+
+/**
+ * Fetch payment details for a transaction including farmer UPI information.
+ * Dynamically fetches data from backend - NO HARDCODING.
+ * 
+ * @param {string} transactionId - Transaction ID (numeric or 'w-<id>' for weighments)
+ * @returns {Promise<{success: boolean, data?: object, error?: string}>}
+ */
+async function fetchPaymentDetails(transactionId) {
+    console.log('📡 Fetching payment details for:', transactionId);
+    
+    try {
+        const base = await _ensureApiBase();
+        if (!base) {
+            return { success: false, error: 'Backend not available' };
+        }
+
+        const response = await fetch(`${base}/broker/payment-details/${encodeURIComponent(transactionId)}`, {
+            method: 'GET',
+            headers: APIClient.getHeaders(),
+            credentials: 'include'
+        });
+
+        if (!response.ok) {
+            let errorMsg = `Server error: ${response.status}`;
+            try {
+                const errData = await response.json();
+                if (errData && errData.error) errorMsg = errData.error;
+            } catch (e) {}
+            console.error('❌ Payment details fetch failed:', errorMsg);
+            return { success: false, error: errorMsg };
+        }
+
+        const json = await response.json();
+        console.log('✅ Payment details received:', json);
+        return json;
+
+    } catch (error) {
+        console.error('❌ Network error fetching payment details:', error);
+        return { success: false, error: 'Network error: ' + error.message };
+    }
+}
+
+/**
+ * Mark a payment as initiated via UPI.
+ * Updates status to INITIATED in backend.
+ * 
+ * @param {string} transactionId - Transaction ID to mark as initiated
+ * @returns {Promise<{success: boolean, message?: string, error?: string}>}
+ */
+async function markPaymentInitiated(transactionId) {
+    console.log('📡 Marking payment initiated for:', transactionId);
+    
+    try {
+        const base = await _ensureApiBase();
+        if (!base) {
+            return { success: false, error: 'Backend not available' };
+        }
+
+        const response = await fetch(`${base}/broker/mark-payment-initiated`, {
+            method: 'POST',
+            headers: APIClient.getHeaders(),
+            credentials: 'include',
+            body: JSON.stringify({ transaction_id: transactionId })
+        });
+
+        if (!response.ok) {
+            let errorMsg = `Server error: ${response.status}`;
+            try {
+                const errData = await response.json();
+                if (errData && errData.error) errorMsg = errData.error;
+            } catch (e) {}
+            console.error('❌ Mark payment initiated failed:', errorMsg);
+            return { success: false, error: errorMsg };
+        }
+
+        const json = await response.json();
+        console.log('✅ Payment initiated marked:', json);
+        return json;
+
+    } catch (error) {
+        console.error('❌ Network error marking payment initiated:', error);
+        return { success: false, error: 'Network error: ' + error.message };
+    }
+}
+
+/**
+ * Mark a payment as completed after the broker confirms the UPI transfer.
+ *
+ * @param {string} transactionId - Transaction ID to mark as paid
+ * @returns {Promise<{success: boolean, message?: string, error?: string}>}
+ */
+async function markPaymentComplete(transactionId) {
+    console.log('Marking payment complete for:', transactionId);
+
+    try {
+        const base = await _ensureApiBase();
+        if (!base) {
+            return { success: false, error: 'Backend not available' };
+        }
+
+        const response = await fetch(`${base}/broker/process-payment`, {
+            method: 'POST',
+            headers: APIClient.getHeaders(),
+            credentials: 'include',
+            body: JSON.stringify({ transaction_id: transactionId })
+        });
+
+        let json = {};
+        try {
+            json = await response.json();
+        } catch (e) {}
+
+        if (!response.ok || !json.success) {
+            const errorMsg = json.error || json.message || `Server error: ${response.status}`;
+            console.error('Mark payment complete failed:', errorMsg);
+            return { success: false, error: errorMsg };
+        }
+
+        console.log('Payment marked complete:', json);
+        return json;
+
+    } catch (error) {
+        console.error('Network error marking payment complete:', error);
+        return { success: false, error: 'Network error: ' + error.message };
+    }
+}
+
+// Expose functions globally
+window.fetchPaymentDetails = fetchPaymentDetails;
+window.markPaymentInitiated = markPaymentInitiated;
+window.markPaymentComplete = markPaymentComplete;

@@ -488,12 +488,13 @@ class Weighment(db.Model):
     quality_grade = db.Column(db.String(20), nullable=True)
     final_price_per_kg = db.Column(db.Float, nullable=False)
     remarks = db.Column(db.String(500), nullable=True)
+    payment_status = db.Column(db.String(20), default='PENDING')
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     broker = db.relationship('Broker', backref='weighments')
     sell_request = db.relationship('SellRequest', backref='weighments')
 
-    def __init__(self, broker_id: int, sell_request_id: Optional[int], farmer_id: Optional[int], farmer_name: Optional[str], order_id: Optional[str], mango_variety: Optional[str], weighment_date: date, actual_weight_tons: float, quality_grade: Optional[str], final_price_per_kg: float, remarks: Optional[str] = None, created_at: Optional[datetime] = None):
+    def __init__(self, broker_id: int, sell_request_id: Optional[int], farmer_id: Optional[int], farmer_name: Optional[str], order_id: Optional[str], mango_variety: Optional[str], weighment_date: date, actual_weight_tons: float, quality_grade: Optional[str], final_price_per_kg: float, remarks: Optional[str] = None, created_at: Optional[datetime] = None, payment_status: str = 'PENDING'):
         self.broker_id = broker_id
         self.sell_request_id = sell_request_id
         self.farmer_id = farmer_id
@@ -505,6 +506,7 @@ class Weighment(db.Model):
         self.quality_grade = quality_grade
         self.final_price_per_kg = final_price_per_kg
         self.remarks = remarks
+        self.payment_status = payment_status
         if created_at:
             self.created_at = created_at
 
@@ -522,6 +524,7 @@ class Weighment(db.Model):
             'quality_grade': self.quality_grade,
             'final_price_per_kg': float(self.final_price_per_kg),
             'remarks': self.remarks,
+            'payment_status': self.payment_status or 'PENDING',
             'created_at': self.created_at.isoformat()
         }
 
@@ -650,6 +653,36 @@ def ensure_broker_columns(engine: Any):
                 conn.execute(text("ALTER TABLE brokers ADD COLUMN rejection_reason TEXT"))
     except Exception as e:
         print('Broker schema check warning (non-fatal):', str(e))
+
+
+def ensure_weighment_columns(engine: Any):
+    """
+    Ensure payment tracking columns exist on `weighments` table (idempotent).
+    """
+    try:
+        with engine.begin() as conn:
+            dialect = engine.dialect.name.lower()
+
+            if dialect == 'sqlite':
+                result = conn.execute(text("PRAGMA table_info('weighments')"))
+                cols = [r[1] for r in result]
+                if 'payment_status' not in cols:
+                    conn.execute(text("ALTER TABLE weighments ADD COLUMN payment_status VARCHAR(20) DEFAULT 'PENDING'"))
+            elif dialect in ('mysql', 'mariadb'):
+                result = conn.execute(text("SHOW COLUMNS FROM weighments"))
+                cols = {r[0]: r[1] for r in result}
+                if 'payment_status' not in cols:
+                    conn.execute(text("ALTER TABLE weighments ADD COLUMN payment_status VARCHAR(20) DEFAULT 'PENDING'"))
+            else:
+                try:
+                    result = conn.execute(text("PRAGMA table_info('weighments')"))
+                    cols = [r[1] for r in result]
+                    if 'payment_status' not in cols:
+                        conn.execute(text("ALTER TABLE weighments ADD COLUMN payment_status VARCHAR(20) DEFAULT 'PENDING'"))
+                except Exception:
+                    pass
+    except Exception as e:
+        print('Weighment schema check warning (non-fatal):', str(e))
 
 # =====================================================
 # SECURITY UTILITIES
@@ -2856,16 +2889,35 @@ def process_payment():
         if not transaction_id:
             return jsonify({'success': False, 'error': 'transaction_id is required'}), 400
 
-        # For weighment-based transactions (format: w-<id>), we don't update a transaction record
-        # since weighments don't have traditional transaction records yet
         if isinstance(transaction_id, str) and transaction_id.startswith('w-'):
-            # Weighment-based transaction - just return success
-            # In a full implementation, you'd create a payment record for this weighment
+            try:
+                weighment_id = int(transaction_id[2:])
+            except (ValueError, TypeError):
+                return jsonify({'success': False, 'error': 'Invalid transaction_id format'}), 400
+
+            weighment = Weighment.query.get(weighment_id)
+            if not weighment:
+                return jsonify({'success': False, 'error': 'Weighment not found'}), 404
+
+            if weighment.broker_id != broker.id:
+                return jsonify({'success': False, 'error': 'Unauthorized access to weighment'}), 403
+
+            calculated_amount = (weighment.actual_weight_tons or 0) * 1000 * (weighment.final_price_per_kg or 0)
+            weighment.payment_status = 'PAID'
+            db.session.commit()
+
+            try:
+                log_audit(broker.user_id, 'PROCESS_PAYMENT',
+                          f"WeighmentID: {weighment_id}, FarmerID: {weighment.farmer_id}, Amount: {amount or calculated_amount}")
+            except Exception as audit_exc:
+                print(f"[AuditLog Error] {audit_exc}")
+
             return jsonify({
                 'success': True,
                 'message': 'Payment processed successfully',
                 'transaction_id': transaction_id,
-                'amount': amount
+                'payment_status': 'PAID',
+                'amount': float(amount) if amount else float(calculated_amount)
             }), 200
 
         try:
@@ -2911,6 +2963,240 @@ def process_payment():
             'error': 'Payment processing failed',
             'message': str(e)
         }), 500
+
+
+# =====================================================
+# UPI PAYMENT APIs - Dynamic Farmer Payments
+# =====================================================
+
+@broker_bp.route('/payment-details/<path:transaction_id>', methods=['GET'])
+def get_payment_details(transaction_id: str):
+    """
+    Get payment details for a transaction including farmer UPI information.
+    Dynamically fetches data from database - NO HARDCODING.
+    
+    URL param: transaction_id (can be numeric ID or 'w-<id>' for weighments)
+    
+    Response:
+    {
+        "success": true,
+        "data": {
+            "transaction_id": "TXN123",
+            "farmer_name": "Farmer Name",
+            "phone": "XXXXXXXXXX",
+            "upi_id": "farmer@upi",
+            "order_id": "ORD-XXX",
+            "amount": 250000
+        }
+    }
+    """
+    broker = get_current_broker()
+    if not broker:
+        return jsonify({'success': False, 'error': 'Unauthorized'}), 401
+
+    try:
+        # Sanitize transaction_id
+        if not transaction_id or transaction_id.strip() == '':
+            return jsonify({'success': False, 'error': 'Transaction ID is required'}), 400
+        
+        transaction_id = transaction_id.strip()
+        
+        # Handle weighment-based transactions (format: w-<id>)
+        is_weighment = False
+        if transaction_id.startswith('w-'):
+            is_weighment = True
+            transaction_id = transaction_id[2:]  # Remove 'w-' prefix
+        
+        # Parse transaction ID
+        try:
+            tx_id = int(transaction_id)
+        except (ValueError, TypeError):
+            return jsonify({'success': False, 'error': 'Invalid transaction ID format'}), 400
+
+        # Fetch transaction or weighment data
+        farmer_id = None
+        farmer_name = None
+        phone = None
+        upi_id = None
+        order_id = None
+        amount = 0.0
+        
+        if is_weighment:
+            # Fetch from Weighment table
+            weighment = Weighment.query.get(tx_id)
+            if not weighment:
+                return jsonify({'success': False, 'error': 'Weighment not found'}), 404
+            
+            # Verify broker has access
+            if weighment.broker_id != broker.id:
+                return jsonify({'success': False, 'error': 'Unauthorized access to weighment'}), 403
+            
+            farmer_id = weighment.farmer_id
+            order_id = weighment.order_id
+            # Calculate amount: weight in tons * 1000 * price per kg
+            amount = (weighment.actual_weight_tons or 0) * 1000 * (weighment.final_price_per_kg or 0)
+        else:
+            # Fetch from Transaction table
+            transaction = Transaction.query.get(tx_id)
+            if not transaction:
+                return jsonify({'success': False, 'error': 'Transaction not found'}), 404
+            
+            # Verify broker has access
+            sell_request = transaction.sell_request
+            if not sell_request or sell_request.broker_id != broker.id:
+                return jsonify({'success': False, 'error': 'Unauthorized access to transaction'}), 403
+            
+            farmer_id = sell_request.farmer_id
+            order_id = sell_request.order_id
+            amount = float(transaction.net_payable or 0)
+
+        # Fetch farmer details including UPI ID
+        if farmer_id:
+            farmer = Farmer.query.get(int(farmer_id))
+            if farmer:
+                user = getattr(farmer, 'user', None)
+                if user:
+                    farmer_name = user.name
+                    phone = user.phone
+                
+                # Decrypt UPI ID
+                upi_id = safe_decrypt(farmer.upi_id) if getattr(farmer, 'upi_id', None) else None
+
+        # Build response
+        response_data = {
+            'transaction_id': f'w-{tx_id}' if is_weighment else str(tx_id),
+            'farmer_name': farmer_name or f'Farmer #{farmer_id}',
+            'phone': phone or '-',
+            'upi_id': upi_id or '-',
+            'order_id': order_id or '-',
+            'amount': round(amount, 2)
+        }
+
+        # Log audit entry
+        try:
+            log_audit(broker.user_id, 'VIEW_PAYMENT_DETAILS', 
+                     f"TransactionID: {response_data['transaction_id']}, FarmerID: {farmer_id}")
+        except Exception as audit_exc:
+            print(f"[AuditLog Error] {audit_exc}")
+
+        return jsonify({
+            'success': True,
+            'data': response_data
+        }), 200
+
+    except Exception as e:
+        print(f'Get payment details error: {str(e)}')
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'error': 'Failed to fetch payment details',
+            'message': str(e)
+        }), 500
+
+
+@broker_bp.route('/mark-payment-initiated', methods=['POST'])
+def mark_payment_initiated():
+    """
+    Mark a payment as initiated via UPI.
+    Updates status to INITIATED and logs the attempt.
+    
+    Request body:
+    {
+        "transaction_id": "TXN123" or "w-123"
+    }
+    
+    Response:
+    {
+        "success": true,
+        "message": "Payment initiated"
+    }
+    """
+    broker = get_current_broker()
+    if not broker:
+        return jsonify({'success': False, 'error': 'Unauthorized'}), 401
+
+    try:
+        data = request.get_json() or {}
+        transaction_id = data.get('transaction_id', '').strip()
+
+        if not transaction_id:
+            return jsonify({'success': False, 'error': 'Transaction ID is required'}), 400
+
+        # Handle weighment format
+        is_weighment = False
+        if transaction_id.startswith('w-'):
+            is_weighment = True
+            transaction_id = transaction_id[2:]
+
+        # Parse transaction ID
+        try:
+            tx_id = int(transaction_id)
+        except (ValueError, TypeError):
+            return jsonify({'success': False, 'error': 'Invalid transaction ID format'}), 400
+
+        # Update payment status based on type
+        if is_weighment:
+            weighment = Weighment.query.get(tx_id)
+            if not weighment:
+                return jsonify({'success': False, 'error': 'Weighment not found'}), 404
+            
+            if weighment.broker_id != broker.id:
+                return jsonify({'success': False, 'error': 'Unauthorized'}), 403
+            
+            # Update payment status to INITIATED
+            weighment.payment_status = 'INITIATED'
+            db.session.commit()
+            
+            # Log audit
+            try:
+                log_audit(broker.user_id, 'UPI_PAYMENT_INITIATED', 
+                        f"WeighmentID: {tx_id}, Amount: {(weighment.actual_weight_tons or 0) * 1000 * (weighment.final_price_per_kg or 0)}")
+            except Exception:
+                pass
+            
+            return jsonify({
+                'success': True,
+                'message': 'Payment initiated',
+                'transaction_id': f'w-{tx_id}'
+            }), 200
+        else:
+            transaction = Transaction.query.get(tx_id)
+            if not transaction:
+                return jsonify({'success': False, 'error': 'Transaction not found'}), 404
+            
+            sell_request = transaction.sell_request
+            if not sell_request or sell_request.broker_id != broker.id:
+                return jsonify({'success': False, 'error': 'Unauthorized'}), 403
+            
+            # Update payment status to INITIATED
+            transaction.payment_status = 'INITIATED'
+            db.session.commit()
+            
+            # Log audit
+            try:
+                log_audit(broker.user_id, 'UPI_PAYMENT_INITIATED', 
+                        f"TransactionID: {tx_id}, Amount: {transaction.net_payable}")
+            except Exception:
+                pass
+            
+            return jsonify({
+                'success': True,
+                'message': 'Payment initiated',
+                'transaction_id': str(tx_id)
+            }), 200
+
+    except Exception as e:
+        db.session.rollback()
+        print(f'Mark payment initiated error: {str(e)}')
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'error': 'Failed to mark payment as initiated',
+            'message': str(e)
+        }), 500
+
 
 @broker_bp.route('/farmer/<int:farmer_id>', methods=['GET'])
 def broker_get_farmer(farmer_id: int):
@@ -3385,6 +3671,12 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
             ensure_broker_columns(db.engine)
         except Exception as e:
             print('Warning: Failed to ensure broker columns:', str(e))
+
+        # Ensure weighment payment tracking columns exist
+        try:
+            ensure_weighment_columns(db.engine)
+        except Exception as e:
+            print('Warning: Failed to ensure weighment columns:', str(e))
 
         # Ensure unique indexes for order_id on weighments and farmer_orders
         try:
