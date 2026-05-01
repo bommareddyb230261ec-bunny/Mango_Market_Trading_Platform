@@ -148,6 +148,7 @@ const PaymentProcessor = {
             document.getElementById('payment-ifsc-code').textContent = farmerDetails.ifsc_code || '-';
             document.getElementById('payment-bank-name').textContent = farmerDetails.bank_name || '-';
             document.getElementById('payment-branch-name').textContent = farmerDetails.branch_name || '-';
+            document.getElementById('payment-upi-id').textContent = farmerDetails.upi_id || '-';
 
             // Reset confirmation checkbox
             const confirmCheckbox = document.getElementById('payment-confirm');
@@ -190,7 +191,8 @@ const PaymentProcessor = {
                     account_number: data.farmer.account_number || '-',
                     ifsc_code: data.farmer.ifsc_code || data.farmer.ifsc || '-',
                     bank_name: data.farmer.bank_name || '-',
-                    branch_name: data.farmer.branch_name || '-'
+                    branch_name: data.farmer.branch_name || '-',
+                    upi_id: data.farmer.upi_id || data.farmer.upi || '-'
                 };
             }
             return {
@@ -199,7 +201,8 @@ const PaymentProcessor = {
                 account_number: '-',
                 ifsc_code: '-',
                 bank_name: '-',
-                branch_name: '-'
+                branch_name: '-',
+                upi_id: '-'
             };
         } catch (error) {
             console.error('Error fetching farmer details:', error);
@@ -209,7 +212,8 @@ const PaymentProcessor = {
                 account_number: '-',
                 ifsc_code: '-',
                 bank_name: '-',
-                branch_name: '-'
+                branch_name: '-',
+                upi_id: '-'
             };
         }
     },

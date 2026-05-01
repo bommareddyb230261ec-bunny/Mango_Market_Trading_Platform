@@ -2934,7 +2934,8 @@ def broker_get_farmer(farmer_id: int):
             'account_number': safe_decrypt(farmer.bank_account_number) if getattr(farmer, 'bank_account_number', None) is not None else None,
             'ifsc_code': safe_decrypt(farmer.ifsc_code) if getattr(farmer, 'ifsc_code', None) is not None else None,
             'bank_name': safe_decrypt(farmer.bank_name) if getattr(farmer, 'bank_name', None) is not None else None,
-            'branch_name': safe_decrypt(farmer.branch_name) if getattr(farmer, 'branch_name', None) is not None else None
+            'branch_name': safe_decrypt(farmer.branch_name) if getattr(farmer, 'branch_name', None) is not None else None,
+            'upi_id': safe_decrypt(farmer.upi_id) if getattr(farmer, 'upi_id', None) is not None else None
         }
 
         return jsonify({'success': True, 'farmer': profile}), 200
@@ -2975,7 +2976,8 @@ def get_farmer_public(farmer_id: int):
             'account_number': safe_decrypt(farmer.bank_account_number) if getattr(farmer, 'bank_account_number', None) is not None else None,
             'ifsc_code': safe_decrypt(farmer.ifsc_code) if getattr(farmer, 'ifsc_code', None) is not None else None,
             'bank_name': safe_decrypt(farmer.bank_name) if getattr(farmer, 'bank_name', None) is not None else None,
-            'branch_name': safe_decrypt(farmer.branch_name) if getattr(farmer, 'branch_name', None) is not None else None
+            'branch_name': safe_decrypt(farmer.branch_name) if getattr(farmer, 'branch_name', None) is not None else None,
+            'upi_id': safe_decrypt(farmer.upi_id) if getattr(farmer, 'upi_id', None) is not None else None
         }
 
         return jsonify({'success': True, 'farmer': profile}), 200
