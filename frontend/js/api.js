@@ -224,7 +224,7 @@ async function markPaymentInitiated(transactionId) {
  * @param {string} upiTransactionId - Broker-entered UPI transaction reference
  * @returns {Promise<{success: boolean, message?: string, error?: string}>}
  */
-async function submitUpiTransaction(transactionId, upiTransactionId) {
+async function submitUpiTransaction(transactionId, upiTransactionId, proofFile = null) {
     console.log('Submitting UPI transaction id for:', transactionId, upiTransactionId);
 
     try {
@@ -233,11 +233,23 @@ async function submitUpiTransaction(transactionId, upiTransactionId) {
             return { success: false, error: 'Backend not available' };
         }
 
+        const formData = new FormData();
+        formData.append('transaction_id', transactionId);
+        formData.append('upi_transaction_id', upiTransactionId);
+        if (proofFile) {
+            formData.append('payment_proof', proofFile);
+        }
+
+        const headers = APIClient.getHeaders();
+        if (headers['Content-Type']) {
+            delete headers['Content-Type'];
+        }
+
         const response = await fetch(`${base}/broker/submit-upi-transaction`, {
             method: 'POST',
-            headers: APIClient.getHeaders(),
+            headers,
             credentials: 'include',
-            body: JSON.stringify({ transaction_id: transactionId, upi_transaction_id: upiTransactionId })
+            body: formData
         });
 
         let json = {};
@@ -267,14 +279,17 @@ async function submitUpiTransaction(transactionId, upiTransactionId) {
  * @param {string} upiTransactionId - Broker-entered UPI transaction reference
  * @returns {Promise<{success: boolean, message?: string, error?: string}>}
  */
-async function markPaymentComplete(transactionId, upiTransactionId) {
+async function markPaymentComplete(transactionId, upiTransactionId, proofFile = null) {
     console.log('Marking payment complete for:', transactionId, upiTransactionId);
 
     if (!upiTransactionId || upiTransactionId.trim() === '') {
         return { success: false, error: 'Please enter the UPI transaction ID' };
     }
+    if (!proofFile) {
+        return { success: false, error: 'Please upload the payment proof screenshot or PDF' };
+    }
 
-    return submitUpiTransaction(transactionId, upiTransactionId);
+    return submitUpiTransaction(transactionId, upiTransactionId, proofFile);
 }
 
 // Expose functions globally

@@ -445,6 +445,7 @@ class Transaction(db.Model):
     # Payment Status
     payment_status = db.Column(db.String(50), default='PENDING')  # PENDING, INITIATED, AWAITING_VERIFICATION, PAID
     upi_transaction_id = db.Column(db.String(100), nullable=True)
+    payment_proof = db.Column(db.String(255), nullable=True)
     transaction_date = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     def __init__(self, request_id: int, market_price_at_sale: float, actual_weight: float, total_cost: float, commission: float, net_payable: float, payment_status: str = 'PENDING', transaction_date: Optional[datetime] = None):
@@ -466,6 +467,8 @@ class Transaction(db.Model):
             'commission': self.commission,
             'net_payable': self.net_payable,
             'upi_transaction_id': self.upi_transaction_id,
+            'payment_proof': self.payment_proof,
+            'payment_proof_url': f"/{self.payment_proof}" if self.payment_proof else None,
             'payment_status': self.payment_status,
             # Backwards-compatible alias used by some frontends
             'status': self.payment_status,
@@ -492,6 +495,7 @@ class Weighment(db.Model):
     remarks = db.Column(db.String(500), nullable=True)
     payment_status = db.Column(db.String(50), default='PENDING')
     upi_transaction_id = db.Column(db.String(100), nullable=True)
+    payment_proof = db.Column(db.String(255), nullable=True)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     broker = db.relationship('Broker', backref='weighments')
@@ -528,6 +532,8 @@ class Weighment(db.Model):
             'final_price_per_kg': float(self.final_price_per_kg),
             'remarks': self.remarks,
             'upi_transaction_id': self.upi_transaction_id,
+            'payment_proof': self.payment_proof,
+            'payment_proof_url': f"/{self.payment_proof}" if self.payment_proof else None,
             'payment_status': self.payment_status or 'PENDING',
             'created_at': self.created_at.isoformat()
         }
@@ -674,6 +680,8 @@ def ensure_weighment_columns(engine: Any):
                     conn.execute(text("ALTER TABLE weighments ADD COLUMN payment_status VARCHAR(50) DEFAULT 'PENDING'"))
                 if 'upi_transaction_id' not in cols:
                     conn.execute(text("ALTER TABLE weighments ADD COLUMN upi_transaction_id VARCHAR(100)"))
+                if 'payment_proof' not in cols:
+                    conn.execute(text("ALTER TABLE weighments ADD COLUMN payment_proof VARCHAR(255)"))
             elif dialect in ('mysql', 'mariadb'):
                 result = conn.execute(text("SHOW COLUMNS FROM weighments"))
                 cols = {r[0]: r[1] for r in result}
@@ -690,6 +698,8 @@ def ensure_weighment_columns(engine: Any):
                             pass
                 if 'upi_transaction_id' not in cols:
                     conn.execute(text("ALTER TABLE weighments ADD COLUMN upi_transaction_id VARCHAR(100)"))
+                if 'payment_proof' not in cols:
+                    conn.execute(text("ALTER TABLE weighments ADD COLUMN payment_proof VARCHAR(255)"))
             else:
                 try:
                     result = conn.execute(text("PRAGMA table_info('weighments')"))
@@ -698,6 +708,8 @@ def ensure_weighment_columns(engine: Any):
                         conn.execute(text("ALTER TABLE weighments ADD COLUMN payment_status VARCHAR(50) DEFAULT 'PENDING'"))
                     if 'upi_transaction_id' not in cols:
                         conn.execute(text("ALTER TABLE weighments ADD COLUMN upi_transaction_id VARCHAR(100)"))
+                    if 'payment_proof' not in cols:
+                        conn.execute(text("ALTER TABLE weighments ADD COLUMN payment_proof VARCHAR(255)"))
                 except Exception:
                     pass
     except Exception as e:
@@ -733,12 +745,16 @@ def ensure_transaction_columns(engine: Any):
                             pass
                 if 'upi_transaction_id' not in cols:
                     conn.execute(text("ALTER TABLE transactions ADD COLUMN upi_transaction_id VARCHAR(100)"))
+                if 'payment_proof' not in cols:
+                    conn.execute(text("ALTER TABLE transactions ADD COLUMN payment_proof VARCHAR(255)"))
             else:
                 try:
                     result = conn.execute(text("PRAGMA table_info('transactions')"))
                     cols = [r[1] for r in result]
                     if 'upi_transaction_id' not in cols:
                         conn.execute(text("ALTER TABLE transactions ADD COLUMN upi_transaction_id VARCHAR(100)"))
+                    if 'payment_proof' not in cols:
+                        conn.execute(text("ALTER TABLE transactions ADD COLUMN payment_proof VARCHAR(255)"))
                 except Exception:
                     pass
     except Exception as e:
@@ -2205,7 +2221,11 @@ def get_broker_dashboard():
                 'total_cost': float(txn.total_cost),
                 'commission': float(txn.commission),
                 'net_payable': float(txn.net_payable),
-                'payment_status': txn.payment_status
+                'payment_status': txn.payment_status,
+                'order_id': sell_req.order_id if sell_req else None,
+                'market_name': sell_req.broker.market_name if sell_req and sell_req.broker else None,
+                'upi_transaction_id': txn.upi_transaction_id,
+                'payment_proof_url': f"/{txn.payment_proof}" if txn.payment_proof else None
             })
 
         # Build response safely (guard against missing related objects)
@@ -3261,7 +3281,7 @@ def mark_payment_initiated():
 @broker_bp.route('/submit-upi-transaction', methods=['POST'])
 def submit_upi_transaction():
     """
-    Submit broker-provided UPI transaction ID after the transfer is complete.
+    Submit broker-provided UPI transaction ID and optional payment proof after the transfer is complete.
     This records the UPI payment reference and sets the payment record for host verification.
     """
     broker = get_current_broker()
@@ -3269,7 +3289,11 @@ def submit_upi_transaction():
         return jsonify({'success': False, 'error': 'Unauthorized'}), 401
 
     try:
-        data = request.get_json() or {}
+        if request.content_type and 'multipart/form-data' in request.content_type.lower():
+            data = request.form.to_dict() or {}
+        else:
+            data = request.get_json() or {}
+
         transaction_id = data.get('transaction_id')
         upi_transaction_id = (data.get('upi_transaction_id') or '').strip()
 
@@ -3277,6 +3301,19 @@ def submit_upi_transaction():
             return jsonify({'success': False, 'error': 'transaction_id is required'}), 400
         if not upi_transaction_id:
             return jsonify({'success': False, 'error': 'upi_transaction_id is required'}), 400
+
+        proof_rel_path = None
+        if 'payment_proof' in request.files:
+            proof_file = request.files['payment_proof']
+            if proof_file and proof_file.filename:
+                filename = secure_filename(proof_file.filename)
+                proof_dir = os.path.join(current_app.instance_path, 'uploads', 'payment_proofs')
+                os.makedirs(proof_dir, exist_ok=True)
+                proof_path = os.path.join(proof_dir, filename)
+                proof_file.save(proof_path)
+                proof_rel_path = os.path.relpath(proof_path, current_app.instance_path).replace('\\', '/')
+
+        duplicate_error = 'UPI transaction ID is invalid or already used previously. Make correct payment and enter the correct UPI ID.'
 
         if isinstance(transaction_id, str) and transaction_id.startswith('w-'):
             try:
@@ -3291,8 +3328,15 @@ def submit_upi_transaction():
             if weighment.broker_id != broker.id:
                 return jsonify({'success': False, 'error': 'Unauthorized access to weighment'}), 403
 
+            existing_txn = Transaction.query.filter(Transaction.upi_transaction_id == upi_transaction_id).first()
+            existing_wgt = Weighment.query.filter(Weighment.upi_transaction_id == upi_transaction_id).first()
+            if (existing_txn is not None) or (existing_wgt is not None and existing_wgt.id != weighment_id):
+                return jsonify({'success': False, 'error': duplicate_error}), 400
+
             weighment.upi_transaction_id = upi_transaction_id
             weighment.payment_status = 'AWAITING_VERIFICATION'
+            if proof_rel_path:
+                weighment.payment_proof = proof_rel_path
             db.session.commit()
 
             try:
@@ -3303,7 +3347,7 @@ def submit_upi_transaction():
 
             return jsonify({
                 'success': True,
-                'message': 'UPI transaction ID submitted and awaiting verification',
+                'message': 'UPI transaction ID and proof submitted and awaiting verification',
                 'transaction_id': f'w-{weighment_id}',
                 'payment_status': 'AWAITING_VERIFICATION'
             }), 200
@@ -3321,8 +3365,16 @@ def submit_upi_transaction():
         if not sell_request or sell_request.broker_id != broker.id:
             return jsonify({'success': False, 'error': 'Unauthorized access to transaction'}), 403
 
+        existing_txn = Transaction.query.filter(Transaction.upi_transaction_id == upi_transaction_id,
+                                                Transaction.id != tx_id).first()
+        existing_wgt = Weighment.query.filter(Weighment.upi_transaction_id == upi_transaction_id).first()
+        if existing_txn or existing_wgt:
+            return jsonify({'success': False, 'error': duplicate_error}), 400
+
         transaction.upi_transaction_id = upi_transaction_id
         transaction.payment_status = 'AWAITING_VERIFICATION'
+        if proof_rel_path:
+            transaction.payment_proof = proof_rel_path
         db.session.commit()
 
         try:
@@ -3333,7 +3385,7 @@ def submit_upi_transaction():
 
         return jsonify({
             'success': True,
-            'message': 'UPI transaction ID submitted and awaiting verification',
+            'message': 'UPI transaction ID and proof submitted and awaiting verification',
             'transaction_id': tx_id,
             'payment_status': 'AWAITING_VERIFICATION'
         }), 200

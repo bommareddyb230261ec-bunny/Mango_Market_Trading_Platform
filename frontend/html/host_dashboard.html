@@ -330,8 +330,8 @@
                     <th>Order ID</th>
                     <th>Amount</th>
                     <th>UPI Txn ID</th>
-                    <th>Farmer Price</th>
                     <th>Status</th>
+                    <th>Proof</th>
                     <th>Action</th>
                 </tr>
             </thead>
@@ -518,8 +518,8 @@
                     <td>${payment.order_id || 'N/A'}</td>
                     <td>₹${(payment.amount || 0).toFixed(2)}</td>
                     <td>${payment.upi_transaction_id || 'Not submitted'}</td>
-                    <td>₹${(payment.farmer_price || 0).toFixed(2)}</td>
                     <td><span class="badge badge-warning">${payment.payment_status || 'PENDING'}</span></td>
+                    <td>${payment.payment_proof_url ? `<button class="btn btn-sm btn-info" onclick="viewPaymentProof('${encodeURI(payment.payment_proof_url)}')">View</button>` : 'No proof'}</td>
                     <td>
                         <button class="btn btn-sm btn-success" data-transaction-id="${payment.transaction_id}">Approve</button>
                         <button class="btn btn-sm btn-danger" data-transaction-id="${payment.transaction_id}">Reject</button>
@@ -647,6 +647,15 @@
             document.body.removeChild(link);
             
             console.log('[Host Dashboard] Download started for:', filename);
+        }
+
+        function viewPaymentProof(proofPath) {
+            if (!proofPath) {
+                alert('No payment proof available for this transaction.');
+                return;
+            }
+
+            window.open(proofPath, '_blank');
         }
 
         async function approveBroker(brokerId, brokerName) {

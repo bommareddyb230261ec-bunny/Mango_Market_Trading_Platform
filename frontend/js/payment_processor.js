@@ -491,6 +491,12 @@ const PaymentProcessor = {
                         <input id="payment-txn-id" type="text" placeholder="Enter UPI transaction reference" 
                                style="width: 100%; padding: 12px 14px; border-radius: 10px; border: 1px solid #d1d5db; font-size: 14px;">
                     </div>
+                    <div style="text-align: left; margin-bottom: 12px;">
+                        <label for="payment-proof-file" style="display: block; margin-bottom: 6px; color: #333; font-weight: 600;">Upload Payment Proof</label>
+                        <input id="payment-proof-file" type="file" accept="image/*,.pdf" 
+                               style="width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid #d1d5db; font-size: 14px; background: #fff;">
+                        <small style="color: #666;">Upload a screenshot or PDF of the transaction receipt for host verification.</small>
+                    </div>
                     <button onclick="PaymentProcessor.confirmPaymentComplete()" 
                             style="padding: 15px 25px; background: #4caf50; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer;">
                         ✅ Submit Payment Reference
@@ -518,9 +524,16 @@ const PaymentProcessor = {
         
         // Read the value before removing the dialog, otherwise the input disappears.
         const txnInput = document.getElementById('payment-txn-id');
+        const proofInput = document.getElementById('payment-proof-file');
         const upiTxnId = txnInput ? txnInput.value.trim() : '';
+        const proofFile = proofInput && proofInput.files && proofInput.files[0] ? proofInput.files[0] : null;
+
         if (!upiTxnId) {
             this.showError('Please enter the UPI transaction ID before submitting');
+            return;
+        }
+        if (!proofFile) {
+            this.showError('Please upload the payment proof screenshot or PDF before submitting');
             return;
         }
 
@@ -531,8 +544,8 @@ const PaymentProcessor = {
         this.showLoading(true);
         
         try {
-            // Call backend to submit the UPI transaction reference
-            const result = await markPaymentComplete(paymentData.transaction_id, upiTxnId);
+            // Call backend to submit the UPI transaction reference and proof
+            const result = await markPaymentComplete(paymentData.transaction_id, upiTxnId, proofFile);
             
             this.showLoading(false);
             

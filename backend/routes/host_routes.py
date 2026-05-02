@@ -206,6 +206,8 @@ def get_pending_payments():
                 'amount': float(txn.net_payable or 0),
                 'payment_status': txn.payment_status,
                 'upi_transaction_id': txn.upi_transaction_id or '-',
+                'payment_proof': txn.payment_proof,
+                'payment_proof_url': f"/{txn.payment_proof}" if txn.payment_proof else None,
                 'farmer_price': float(txn.market_price_at_sale or 0)
             })
 
@@ -228,6 +230,8 @@ def get_pending_payments():
                 'amount': float(amount),
                 'payment_status': weighment.payment_status,
                 'upi_transaction_id': weighment.upi_transaction_id or '-',
+                'payment_proof': weighment.payment_proof,
+                'payment_proof_url': f"/{weighment.payment_proof}" if weighment.payment_proof else None,
                 'farmer_price': float(weighment.final_price_per_kg or 0)
             })
 

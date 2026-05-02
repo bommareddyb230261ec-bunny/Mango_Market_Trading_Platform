@@ -70,6 +70,10 @@ const TransactionManager = {
                     commission: 0,
                     net_payable: ((w.actual_weight_tons || 0) * 1000 * (w.final_price_per_kg || 0)),
                     payment_status: w.payment_status || 'PENDING',
+                    upi_transaction_id: w.upi_transaction_id || null,
+                    payment_proof_url: w.payment_proof_url || null,
+                    order_id: w.order_id || null,
+                    market_name: w.market_name || null,
                     _is_weighment: true
                 }));
                 this.allTransactions = [...this.allTransactions, ...wAsTx];
@@ -148,8 +152,11 @@ const TransactionManager = {
         document.getElementById('detail-variety').textContent = tx.variety;
         document.getElementById('detail-weight').textContent = weight;
         document.getElementById('detail-price').textContent = price;
+        document.getElementById('detail-order-id').textContent = tx.order_id || '-';
         document.getElementById('detail-total').textContent = '₹' + totalAmount;
         document.getElementById('detail-commission').textContent = typeof tx.commission === 'number' ? '₹' + tx.commission.toFixed(2) : '₹0.00';
+        document.getElementById('detail-upi-id').textContent = tx.upi_transaction_id || '-';
+        document.getElementById('detail-payment-proof').innerHTML = tx.payment_proof_url ? `<a href="${encodeURI(tx.payment_proof_url)}" target="_blank" rel="noopener">View Proof</a>` : '-';
         document.getElementById('detail-net-payable').textContent = typeof tx.net_payable === 'number' ? '₹' + tx.net_payable.toFixed(2) : '₹0.00';
         document.getElementById('detail-payment-status').textContent = tx.payment_status || 'N/A';
         
@@ -225,7 +232,6 @@ const TransactionManager = {
 
         this.renderTransactions();
     },
-
     printCurrentTransaction() {
         if (!this.currentTransaction) {
             this.showError('No transaction selected');
@@ -233,7 +239,9 @@ const TransactionManager = {
         }
 
         const tx = this.currentTransaction;
-        const totalAmount = (tx.actual_weight * tx.market_price_at_sale).toFixed(2);
+        const totalAmount = (typeof tx.total_cost === 'number')
+            ? tx.total_cost.toFixed(2)
+            : ((tx.actual_weight || 0) * (tx.market_price_at_sale || 0) * 1000).toFixed(2);
 
         const printWindow = window.open('', '', 'height=600,width=800');
         printWindow.document.write(`

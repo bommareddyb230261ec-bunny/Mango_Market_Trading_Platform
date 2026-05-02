@@ -40,11 +40,13 @@
                     <th>Broker Final Price (₹/kg)</th>
                     <th>Net Payable</th>
                     <th>Transaction Date</th>
+                    <th>UPI Transaction ID</th>
+                    <th>Transaction Proof</th>
                     <th>Payment Status</th>
                 </tr>
             </thead>
             <tbody id="acceptedTableBody">
-                <tr><td colspan="12" style="text-align:center; padding:20px;">Loading accepted requests...</td></tr>
+                <tr><td colspan="14" style="text-align:center; padding:20px;">Loading accepted requests...</td></tr>
             </tbody>
         </table>
 
@@ -63,13 +65,13 @@
             try {
                 const res = await fetch(`${API_BASE_URL}/farmer/dashboard`, { method: 'GET', credentials: 'include' });
                 if (!res.ok) {
-                    table.innerHTML = `<tr><td colspan="12" style="text-align:center;">Failed to load: ${res.status}</td></tr>`;
+                    table.innerHTML = `<tr><td colspan="14" style="text-align:center;">Failed to load: ${res.status}</td></tr>`;
                     return;
                 }
                 const data = await res.json();
                 const rows = (data.requests || []).filter(r => r.status === 'ACCEPTED');
                 if (rows.length === 0) {
-                    table.innerHTML = `<tr><td colspan="12" style="text-align:center; padding:18px;">No accepted requests found.</td></tr>`;
+                    table.innerHTML = `<tr><td colspan="14" style="text-align:center; padding:18px;">No accepted requests found.</td></tr>`;
                     return;
                 }
 
@@ -84,15 +86,17 @@
                         <td>${r.order_id || '-'}</td>
                         <td>${(r.weighment_weight_tons !== null && r.weighment_weight_tons !== undefined) ? r.weighment_weight_tons : (r.latest_weighment ? r.latest_weighment.actual_weight_tons : '-') }</td>
                         <td>${(r.broker_final_price !== null && r.broker_final_price !== undefined) ? ('₹'+Number(r.broker_final_price).toFixed(2)) : (r.latest_weighment ? ('₹'+Number(r.latest_weighment.final_price_per_kg).toFixed(2)) : '-')}</td>
-                        <td>${r.transaction ? ('₹'+Number(r.transaction.net_payable).toFixed(2)) : '-'}</td>
-                        <td>${r.transaction ? new Date(r.transaction.transaction_date).toLocaleDateString() : '-'}</td>
-                        <td>${r.transaction ? r.transaction.payment_status : 'Pending'}</td>
+                        <td>${r.transaction ? ('₹'+Number(r.transaction.net_payable).toFixed(2)) : (r.latest_weighment ? ('₹'+Number((r.latest_weighment.actual_weight_tons || 0) * 1000 * (r.latest_weighment.final_price_per_kg || 0)).toFixed(2)) : '-' )}</td>
+                        <td>${r.transaction ? new Date(r.transaction.transaction_date).toLocaleDateString() : (r.latest_weighment ? new Date(r.latest_weighment.created_at).toLocaleDateString() : '-')}</td>
+                        <td>${(r.transaction && r.transaction.upi_transaction_id) ? r.transaction.upi_transaction_id : (r.latest_weighment && r.latest_weighment.upi_transaction_id ? r.latest_weighment.upi_transaction_id : '-')}</td>
+                        <td>${(r.transaction && r.transaction.payment_proof_url) ? `<a href="${encodeURI(r.transaction.payment_proof_url)}" target="_blank" rel="noopener">View Proof</a>` : (r.latest_weighment && r.latest_weighment.payment_proof_url ? `<a href="${encodeURI(r.latest_weighment.payment_proof_url)}" target="_blank" rel="noopener">View Proof</a>` : '-')}</td>
+                        <td>${r.transaction ? r.transaction.payment_status : (r.latest_weighment ? r.latest_weighment.payment_status : 'Pending')}</td>
                     </tr>
                 `).join('');
 
             } catch (e) {
                 console.error('Accepted page load error', e);
-                table.innerHTML = `<tr><td colspan="12" style="text-align:center; padding:18px;">Error loading accepted requests.</td></tr>`;
+                table.innerHTML = `<tr><td colspan="14" style="text-align:center; padding:18px;">Error loading accepted requests.</td></tr>`;
             }
 
             // Logout wiring (same as farmer.js)
