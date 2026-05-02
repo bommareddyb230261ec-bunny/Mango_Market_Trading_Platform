@@ -33,7 +33,7 @@ const PaymentProcessor = {
                 return;
             }
 
-            // Load transaction details from URL parameter
+            // Load transaction details from URL parameter if present
             await this.loadTransactionFromUrl();
             this.setupEventListeners();
             console.log('✅ Payment Processor loaded successfully');
@@ -46,39 +46,49 @@ const PaymentProcessor = {
     async loadTransactionFromUrl() {
         try {
             const urlParams = new URLSearchParams(window.location.search);
-            const transactionId = urlParams.get('transactionId');
+            const transactionId = urlParams.get('transactionId') || urlParams.get('transactionid');
 
             if (!transactionId) {
-                this.showError('No transaction ID provided');
+                console.log('ℹ️ No transaction ID in URL, waiting for user input');
                 return;
             }
 
-            console.log('📊 Loading transaction:', transactionId);
+            const input = document.getElementById('payment-transaction-id');
+            if (input) {
+                input.value = transactionId;
+            }
 
-            // Show loading state
+            await this.loadTransactionById(transactionId);
+        } catch (error) {
+            console.error('❌ LoadTransactionFromUrl error:', error);
+            this.showError('Error loading transaction: ' + error.message);
+        }
+    },
+
+    async loadTransactionById(transactionId) {
+        if (!transactionId) {
+            this.showError('Please enter a valid transaction ID');
+            return;
+        }
+
+        try {
+            console.log('📊 Loading transaction:', transactionId);
             this.showLoading(true);
 
-            // Use the new API to fetch payment details dynamically
             const result = await fetchPaymentDetails(transactionId);
-            
             if (!result.success) {
-                this.showLoading(false);
                 this.showError(result.error || 'Failed to load payment details');
                 return;
             }
 
-            // Store in global paymentData
             paymentData = result.data;
             console.log('📊 Payment data loaded:', paymentData);
-
-            // Display the payment details
             await this.displayPaymentDetails(paymentData);
-            this.showLoading(false);
-
         } catch (error) {
-            this.showLoading(false);
-            console.error('❌ Load error:', error);
+            console.error('❌ LoadTransactionById error:', error);
             this.showError('Error loading transaction: ' + error.message);
+        } finally {
+            this.showLoading(false);
         }
     },
 
@@ -292,10 +302,6 @@ const PaymentProcessor = {
                             style="padding: 12px 20px; background: #4285f4; color: white; border: none; border-radius: 8px; cursor: pointer;">
                         📲 Install Google Pay
                     </button>
-                    <button onclick="window.open('https://play.google.com/store/apps/details?id=com.phonepe.app', '_blank')" 
-                            style="padding: 12px 20px; background: #6739b7; color: white; border: none; border-radius: 8px; cursor: pointer;">
-                        📱 Install PhonePe
-                    </button>
                     <button onclick="window.open('https://play.google.com/store/apps/details?id=com.paytm.money', '_blank')" 
                             style="padding: 12px 20px; background: #00bfa5; color: white; border: none; border-radius: 8px; cursor: pointer;">
                         💰 Install Paytm
@@ -350,18 +356,7 @@ const PaymentProcessor = {
         }
 
         try {
-            // Step 4: Detect device - show alert for desktop
-            if (!this.isMobileDevice()) {
-                this.showError('Please open this page on a mobile device to complete UPI payment');
-                isPaymentInProgress = false;
-                if (btn) {
-                    btn.disabled = false;
-                    btn.textContent = 'Show UPI QR';
-                }
-                return;
-            }
-
-            // Step 5: Validate payment details. PhonePe can reject browser-launched UPI intents.
+            // Step 4: Validate payment details.
             if (!paymentData.upi_id || paymentData.upi_id === '-') {
                 this.showError('Farmer UPI ID not available. Cannot initiate UPI payment.');
                 isPaymentInProgress = false;
@@ -452,7 +447,7 @@ const PaymentProcessor = {
                 <div style="font-size: 60px; margin-bottom: 20px;">📱</div>
                 <h2 style="color: #1a1a1a; margin: 0 0 10px 0;">Scan & Pay</h2>
                 <p style="color: #666; margin-bottom: 20px;">
-                    Open PhonePe, scan this QR, verify the amount, and enter your UPI PIN.
+                    Scan this QR code with any UPI app, verify the amount, and complete the transfer.
                 </p>
 
                 <div style="background: #ffffff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 14px; margin-bottom: 16px;">
@@ -462,7 +457,7 @@ const PaymentProcessor = {
                 <div style="background: #fff7ed; padding: 14px; border-radius: 8px; margin-bottom: 16px; text-align: left;">
                     <p style="margin: 0 0 8px 0; color: #9a3412; font-weight: 700;">Payment details</p>
                     <p style="margin: 0 0 10px 0; color: #444; font-size: 14px;">
-                        QR scan avoids PhonePe blocking browser-generated payment links.
+                        Scan this QR code with any UPI app on your phone or desktop scanner.
                     </p>
                     <p style="margin: 4px 0; color: #222; font-size: 14px;"><strong>Name:</strong> ${this.escapeHtml(farmerName)}</p>
                     <p style="margin: 4px 0; color: #222; font-size: 14px;"><strong>UPI ID:</strong> ${this.escapeHtml(upiId)}</p>
@@ -481,10 +476,6 @@ const PaymentProcessor = {
                                 style="flex: 1; min-width: 120px; padding: 10px 12px; background: #f3f4f6; color: #333; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer;">
                             Copy Amount
                         </button>
-                        <button onclick="PaymentProcessor.openPhonePePayment()"
-                                style="flex: 1 0 100%; padding: 10px 12px; background: #6739b7; color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer;">
-                            Try opening PhonePe directly
-                        </button>
                     </div>
                 </div>
                 
@@ -495,18 +486,23 @@ const PaymentProcessor = {
                 </div>
                 
                 <div style="display: flex; gap: 10px; flex-direction: column;">
+                    <div style="text-align: left; margin-bottom: 12px;">
+                        <label for="payment-txn-id" style="display: block; margin-bottom: 6px; color: #333; font-weight: 600;">UPI Transaction ID</label>
+                        <input id="payment-txn-id" type="text" placeholder="Enter UPI transaction reference" 
+                               style="width: 100%; padding: 12px 14px; border-radius: 10px; border: 1px solid #d1d5db; font-size: 14px;">
+                    </div>
                     <button onclick="PaymentProcessor.confirmPaymentComplete()" 
                             style="padding: 15px 25px; background: #4caf50; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer;">
-                        ✅ Payment Completed
+                        ✅ Submit Payment Reference
                     </button>
                     <button onclick="PaymentProcessor.cancelPayment()" 
                             style="padding: 12px 25px; background: #f5f5f5; color: #666; border: none; border-radius: 8px; font-size: 14px; cursor: pointer;">
-                        ❌ Payment Not Done
+                        ❌ Cancel
                     </button>
                 </div>
                 
                 <p style="margin-top: 20px; font-size: 12px; color: #999;">
-                    Transaction will be recorded after confirmation
+                    After completing the transfer in your UPI app, enter the transaction ID from the payment app and submit for host verification.
                 </p>
             </div>
         `;
@@ -520,6 +516,14 @@ const PaymentProcessor = {
     async confirmPaymentComplete() {
         console.log('✅ User confirmed payment complete');
         
+        // Read the value before removing the dialog, otherwise the input disappears.
+        const txnInput = document.getElementById('payment-txn-id');
+        const upiTxnId = txnInput ? txnInput.value.trim() : '';
+        if (!upiTxnId) {
+            this.showError('Please enter the UPI transaction ID before submitting');
+            return;
+        }
+
         const dialog = document.getElementById('payment-confirmation-dialog');
         if (dialog) dialog.remove();
         
@@ -527,24 +531,24 @@ const PaymentProcessor = {
         this.showLoading(true);
         
         try {
-            // Call backend to mark payment as COMPLETED
-            const result = await markPaymentComplete(paymentData.transaction_id);
+            // Call backend to submit the UPI transaction reference
+            const result = await markPaymentComplete(paymentData.transaction_id, upiTxnId);
             
             this.showLoading(false);
             
             if (result.success) {
-                this.showSuccess('🎉 Payment recorded successfully!');
+                this.showSuccess('🎉 Payment reference submitted successfully! Awaiting host verification.');
                 setTimeout(() => {
                     window.location.href = 'transactions.html';
                 }, 2000);
             } else {
-                this.showError(result.error || 'Failed to record payment');
+                this.showError(result.error || 'Failed to submit payment reference');
                 isPaymentInProgress = false;
             }
         } catch (error) {
             this.showLoading(false);
             console.error('❌ Confirm payment error:', error);
-            this.showError('Error confirming payment: ' + error.message);
+            this.showError('Error submitting payment reference: ' + error.message);
             isPaymentInProgress = false;
         }
     },
@@ -716,6 +720,17 @@ const PaymentProcessor = {
             confirmBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 this.confirmPayment();
+            });
+        }
+
+        const loadBtn = document.getElementById('load-transaction-btn');
+        if (loadBtn) {
+            loadBtn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                const transactionInput = document.getElementById('payment-transaction-id');
+                if (transactionInput) {
+                    await this.loadTransactionById(transactionInput.value.trim());
+                }
             });
         }
 

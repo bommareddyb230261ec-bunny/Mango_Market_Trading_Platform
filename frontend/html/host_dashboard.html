@@ -316,6 +316,36 @@
         </table>
     </div>
 
+    <div class="table-container" style="margin-top: 30px;">
+        <h2>Pending Payment Verifications</h2>
+        <div id="loadingPaymentsMessage">
+            <p>Loading pending payments...</p>
+        </div>
+        <table id="pendingPaymentsTable">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Transaction ID</th>
+                    <th>Farmer</th>
+                    <th>Order ID</th>
+                    <th>Amount</th>
+                    <th>UPI Txn ID</th>
+                    <th>Farmer Price</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="pendingPaymentsData">
+                <tr>
+                    <td colspan="9" class="no-data">
+                        <p>Loading pending payments...</p>
+                        <small>Please wait</small>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
     <!-- Scripts -->
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
@@ -333,8 +363,9 @@
                 return;
             }
             
-            // Load pending brokers
+            // Load pending brokers and pending payments
             loadPendingBrokers();
+            loadPendingPayments();
         });
 
         async function loadPendingBrokers() {
@@ -426,6 +457,155 @@
                 
                 tbody.appendChild(row);
             });
+        }
+
+        async function loadPendingPayments() {
+            const table = document.getElementById('pendingPaymentsTable');
+            const loadingMsg = document.getElementById('loadingPaymentsMessage');
+
+            if (loadingMsg) {
+                loadingMsg.style.display = 'block';
+            }
+
+            try {
+                console.log('[Host Dashboard] Fetching pending payments...');
+                const response = await fetch(`${API_BASE}/api/host/payments/pending`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include'
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP Error: ${response.status}`);
+                }
+
+                const payments = await response.json();
+                console.log('[Host Dashboard] Fetched payments:', payments);
+
+                if (loadingMsg) {
+                    loadingMsg.style.display = 'none';
+                }
+
+                if (Array.isArray(payments) && payments.length > 0) {
+                    populatePaymentsTable(payments);
+                } else {
+                    showNoPaymentsMessage(table);
+                }
+            } catch (error) {
+                console.error('[Host Dashboard] Error loading payments:', error);
+                if (loadingMsg) {
+                    loadingMsg.innerHTML = `<p style="color: red;">Error loading payments: ${error.message}</p>`;
+                }
+            }
+        }
+
+        function populatePaymentsTable(payments) {
+            const tbody = document.getElementById('pendingPaymentsData');
+            if (!tbody) {
+                console.error('[Host Dashboard] Payments table body not found');
+                return;
+            }
+
+            tbody.innerHTML = '';
+            payments.forEach((payment, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td>${payment.transaction_id}</td>
+                    <td>${payment.farmer_name || 'N/A'}</td>
+                    <td>${payment.order_id || 'N/A'}</td>
+                    <td>₹${(payment.amount || 0).toFixed(2)}</td>
+                    <td>${payment.upi_transaction_id || 'Not submitted'}</td>
+                    <td>₹${(payment.farmer_price || 0).toFixed(2)}</td>
+                    <td><span class="badge badge-warning">${payment.payment_status || 'PENDING'}</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-success" data-transaction-id="${payment.transaction_id}">Approve</button>
+                        <button class="btn btn-sm btn-danger" data-transaction-id="${payment.transaction_id}">Reject</button>
+                    </td>
+                `;
+
+                const approveButton = row.querySelector('button.btn-success');
+                const rejectButton = row.querySelector('button.btn-danger');
+                if (approveButton) {
+                    approveButton.addEventListener('click', () => approvePayment(payment.transaction_id));
+                }
+                if (rejectButton) {
+                    rejectButton.addEventListener('click', () => rejectPayment(payment.transaction_id));
+                }
+
+                tbody.appendChild(row);
+            });
+        }
+
+        function showNoPaymentsMessage(table) {
+            const tbody = document.getElementById('pendingPaymentsData');
+            if (tbody) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="9" style="text-align: center; padding: 30px;">
+                            <p style="color: #666; font-size: 16px;">No pending payments require host verification right now.</p>
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+
+        async function approvePayment(transactionId) {
+            if (!confirm(`Approve payment ${transactionId}?`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/api/host/payments/${encodeURIComponent(transactionId)}/approve`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include'
+                });
+
+                const data = await response.json();
+                if (data.success || response.ok) {
+                    alert(`Payment ${transactionId} has been approved.`);
+                    loadPendingPayments();
+                } else {
+                    alert(`Error: ${data.message || 'Failed to approve payment'}`);
+                }
+            } catch (error) {
+                console.error('[Host Dashboard] Approve payment error:', error);
+                alert(`Error: ${error.message}`);
+            }
+        }
+
+        async function rejectPayment(transactionId) {
+            const reason = prompt(`Enter reason for rejecting payment ${transactionId}:`, 'Incorrect amount, missing reference or invalid transfer');
+            if (reason === null) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/api/host/payments/${encodeURIComponent(transactionId)}/reject`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({ reason })
+                });
+
+                const data = await response.json();
+                if (data.success || response.ok) {
+                    alert(`Payment ${transactionId} has been rejected.`);
+                    loadPendingPayments();
+                } else {
+                    alert(`Error: ${data.message || 'Failed to reject payment'}`);
+                }
+            } catch (error) {
+                console.error('[Host Dashboard] Reject payment error:', error);
+                alert(`Error: ${error.message}`);
+            }
         }
 
         function showNoBrokersMessage(table) {
@@ -551,6 +731,7 @@
         function refreshTable() {
             console.log('[Host Dashboard] Refreshing table...');
             loadPendingBrokers();
+            loadPendingPayments();
         }
     </script>
 </body>

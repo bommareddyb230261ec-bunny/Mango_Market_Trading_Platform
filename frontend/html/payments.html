@@ -321,6 +321,21 @@
 
     <form class="payment-form-container" id="payment-form">
         
+        <!-- Transaction Lookup Section -->
+        <div class="payment-form-section">
+            <h3>Transaction Lookup</h3>
+            <div class="detail-grid">
+                <div class="detail-item">
+                    <label>Transaction / Weighment ID</label>
+                    <input type="text" id="payment-transaction-id" placeholder="Enter transaction ID, e.g. 123 or w-4" style="width:100%; padding: 0.8rem; border-radius: 8px; border: 1px solid #d1d5db; font-size: 1rem;">
+                </div>
+                <div class="detail-item" style="display:flex; align-items:flex-end;">
+                    <button type="button" id="load-transaction-btn" class="btn-confirm-payment" style="width:100%;">Load Payment</button>
+                </div>
+            </div>
+            <p style="margin-top: 1rem; color: #555; font-size: 0.95rem;">If you opened this page directly, enter the transaction ID and tap Load Payment.</p>
+        </div>
+
         <!-- Farmer Details Section -->
         <div class="payment-form-section">
             <h3>Farmer Details</h3>
@@ -396,6 +411,10 @@
                 <input type="checkbox" id="payment-confirm" onchange="PaymentProcessor.togglePaymentButton()">
                 <span>I confirm that all details are correct and authorize this payment</span>
             </label>
+        </div>
+
+        <div style="margin-top: 1rem; color: #555; font-size: 0.95rem;">
+            After you complete the UPI transfer, the next screen will ask you to enter the UPI transaction reference ID.
         </div>
 
         <!-- Action Buttons -->

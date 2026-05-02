@@ -443,7 +443,8 @@ class Transaction(db.Model):
     net_payable = db.Column(db.Float, nullable=False)
 
     # Payment Status
-    payment_status = db.Column(db.String(20), default='PENDING')  # PENDING, PAID
+    payment_status = db.Column(db.String(50), default='PENDING')  # PENDING, INITIATED, AWAITING_VERIFICATION, PAID
+    upi_transaction_id = db.Column(db.String(100), nullable=True)
     transaction_date = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     def __init__(self, request_id: int, market_price_at_sale: float, actual_weight: float, total_cost: float, commission: float, net_payable: float, payment_status: str = 'PENDING', transaction_date: Optional[datetime] = None):
@@ -464,6 +465,7 @@ class Transaction(db.Model):
             'total_cost': self.total_cost,
             'commission': self.commission,
             'net_payable': self.net_payable,
+            'upi_transaction_id': self.upi_transaction_id,
             'payment_status': self.payment_status,
             # Backwards-compatible alias used by some frontends
             'status': self.payment_status,
@@ -488,7 +490,8 @@ class Weighment(db.Model):
     quality_grade = db.Column(db.String(20), nullable=True)
     final_price_per_kg = db.Column(db.Float, nullable=False)
     remarks = db.Column(db.String(500), nullable=True)
-    payment_status = db.Column(db.String(20), default='PENDING')
+    payment_status = db.Column(db.String(50), default='PENDING')
+    upi_transaction_id = db.Column(db.String(100), nullable=True)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     broker = db.relationship('Broker', backref='weighments')
@@ -524,6 +527,7 @@ class Weighment(db.Model):
             'quality_grade': self.quality_grade,
             'final_price_per_kg': float(self.final_price_per_kg),
             'remarks': self.remarks,
+            'upi_transaction_id': self.upi_transaction_id,
             'payment_status': self.payment_status or 'PENDING',
             'created_at': self.created_at.isoformat()
         }
@@ -667,22 +671,78 @@ def ensure_weighment_columns(engine: Any):
                 result = conn.execute(text("PRAGMA table_info('weighments')"))
                 cols = [r[1] for r in result]
                 if 'payment_status' not in cols:
-                    conn.execute(text("ALTER TABLE weighments ADD COLUMN payment_status VARCHAR(20) DEFAULT 'PENDING'"))
+                    conn.execute(text("ALTER TABLE weighments ADD COLUMN payment_status VARCHAR(50) DEFAULT 'PENDING'"))
+                if 'upi_transaction_id' not in cols:
+                    conn.execute(text("ALTER TABLE weighments ADD COLUMN upi_transaction_id VARCHAR(100)"))
             elif dialect in ('mysql', 'mariadb'):
                 result = conn.execute(text("SHOW COLUMNS FROM weighments"))
                 cols = {r[0]: r[1] for r in result}
                 if 'payment_status' not in cols:
-                    conn.execute(text("ALTER TABLE weighments ADD COLUMN payment_status VARCHAR(20) DEFAULT 'PENDING'"))
+                    conn.execute(text("ALTER TABLE weighments ADD COLUMN payment_status VARCHAR(50) DEFAULT 'PENDING'"))
+                else:
+                    existing_type = cols['payment_status'].lower()
+                    if existing_type.startswith('varchar('):
+                        try:
+                            current_size = int(existing_type.split('(')[1].split(')')[0])
+                            if current_size < 50:
+                                conn.execute(text("ALTER TABLE weighments MODIFY COLUMN payment_status VARCHAR(50) DEFAULT 'PENDING'"))
+                        except ValueError:
+                            pass
+                if 'upi_transaction_id' not in cols:
+                    conn.execute(text("ALTER TABLE weighments ADD COLUMN upi_transaction_id VARCHAR(100)"))
             else:
                 try:
                     result = conn.execute(text("PRAGMA table_info('weighments')"))
                     cols = [r[1] for r in result]
                     if 'payment_status' not in cols:
-                        conn.execute(text("ALTER TABLE weighments ADD COLUMN payment_status VARCHAR(20) DEFAULT 'PENDING'"))
+                        conn.execute(text("ALTER TABLE weighments ADD COLUMN payment_status VARCHAR(50) DEFAULT 'PENDING'"))
+                    if 'upi_transaction_id' not in cols:
+                        conn.execute(text("ALTER TABLE weighments ADD COLUMN upi_transaction_id VARCHAR(100)"))
                 except Exception:
                     pass
     except Exception as e:
         print('Weighment schema check warning (non-fatal):', str(e))
+
+
+def ensure_transaction_columns(engine: Any):
+    """
+    Ensure optional columns exist on `transactions` table for UPI payment tracking.
+    """
+    try:
+        with engine.connect() as conn:
+            dialect = engine.dialect.name.lower()
+
+            if dialect == 'sqlite':
+                result = conn.execute(text("PRAGMA table_info('transactions')"))
+                cols = [r[1] for r in result]
+                if 'upi_transaction_id' not in cols:
+                    conn.execute(text("ALTER TABLE transactions ADD COLUMN upi_transaction_id VARCHAR(100)"))
+            elif dialect in ('mysql', 'mariadb'):
+                result = conn.execute(text("SHOW COLUMNS FROM transactions"))
+                cols = {r[0]: r[1] for r in result}
+                if 'payment_status' not in cols:
+                    conn.execute(text("ALTER TABLE transactions ADD COLUMN payment_status VARCHAR(50) DEFAULT 'PENDING'"))
+                else:
+                    existing_type = cols['payment_status'].lower()
+                    if existing_type.startswith('varchar('):
+                        try:
+                            current_size = int(existing_type.split('(')[1].split(')')[0])
+                            if current_size < 50:
+                                conn.execute(text("ALTER TABLE transactions MODIFY COLUMN payment_status VARCHAR(50) DEFAULT 'PENDING'"))
+                        except ValueError:
+                            pass
+                if 'upi_transaction_id' not in cols:
+                    conn.execute(text("ALTER TABLE transactions ADD COLUMN upi_transaction_id VARCHAR(100)"))
+            else:
+                try:
+                    result = conn.execute(text("PRAGMA table_info('transactions')"))
+                    cols = [r[1] for r in result]
+                    if 'upi_transaction_id' not in cols:
+                        conn.execute(text("ALTER TABLE transactions ADD COLUMN upi_transaction_id VARCHAR(100)"))
+                except Exception:
+                    pass
+    except Exception as e:
+        print('Transaction schema check warning (non-fatal):', str(e))
 
 # =====================================================
 # SECURITY UTILITIES
@@ -3198,6 +3258,98 @@ def mark_payment_initiated():
         }), 500
 
 
+@broker_bp.route('/submit-upi-transaction', methods=['POST'])
+def submit_upi_transaction():
+    """
+    Submit broker-provided UPI transaction ID after the transfer is complete.
+    This records the UPI payment reference and sets the payment record for host verification.
+    """
+    broker = get_current_broker()
+    if not broker:
+        return jsonify({'success': False, 'error': 'Unauthorized'}), 401
+
+    try:
+        data = request.get_json() or {}
+        transaction_id = data.get('transaction_id')
+        upi_transaction_id = (data.get('upi_transaction_id') or '').strip()
+
+        if not transaction_id:
+            return jsonify({'success': False, 'error': 'transaction_id is required'}), 400
+        if not upi_transaction_id:
+            return jsonify({'success': False, 'error': 'upi_transaction_id is required'}), 400
+
+        if isinstance(transaction_id, str) and transaction_id.startswith('w-'):
+            try:
+                weighment_id = int(transaction_id[2:])
+            except (ValueError, TypeError):
+                return jsonify({'success': False, 'error': 'Invalid transaction_id format'}), 400
+
+            weighment = Weighment.query.get(weighment_id)
+            if not weighment:
+                return jsonify({'success': False, 'error': 'Weighment not found'}), 404
+
+            if weighment.broker_id != broker.id:
+                return jsonify({'success': False, 'error': 'Unauthorized access to weighment'}), 403
+
+            weighment.upi_transaction_id = upi_transaction_id
+            weighment.payment_status = 'AWAITING_VERIFICATION'
+            db.session.commit()
+
+            try:
+                log_audit(broker.user_id, 'UPI_PAYMENT_SUBMITTED', 
+                          f"WeighmentID: {weighment_id}, Amount: {(weighment.actual_weight_tons or 0) * 1000 * (weighment.final_price_per_kg or 0)}, UPI_TXN: {upi_transaction_id}")
+            except Exception:
+                pass
+
+            return jsonify({
+                'success': True,
+                'message': 'UPI transaction ID submitted and awaiting verification',
+                'transaction_id': f'w-{weighment_id}',
+                'payment_status': 'AWAITING_VERIFICATION'
+            }), 200
+
+        try:
+            tx_id = int(transaction_id)
+        except (ValueError, TypeError):
+            return jsonify({'success': False, 'error': 'Invalid transaction_id format'}), 400
+
+        transaction = Transaction.query.get(tx_id)
+        if not transaction:
+            return jsonify({'success': False, 'error': 'Transaction not found'}), 404
+
+        sell_request = transaction.sell_request
+        if not sell_request or sell_request.broker_id != broker.id:
+            return jsonify({'success': False, 'error': 'Unauthorized access to transaction'}), 403
+
+        transaction.upi_transaction_id = upi_transaction_id
+        transaction.payment_status = 'AWAITING_VERIFICATION'
+        db.session.commit()
+
+        try:
+            log_audit(broker.user_id, 'UPI_PAYMENT_SUBMITTED', 
+                      f"TransactionID: {tx_id}, Amount: {transaction.net_payable}, UPI_TXN: {upi_transaction_id}")
+        except Exception:
+            pass
+
+        return jsonify({
+            'success': True,
+            'message': 'UPI transaction ID submitted and awaiting verification',
+            'transaction_id': tx_id,
+            'payment_status': 'AWAITING_VERIFICATION'
+        }), 200
+
+    except Exception as e:
+        db.session.rollback()
+        print(f'Submit UPI transaction error: {str(e)}')
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'error': 'Failed to submit UPI transaction',
+            'message': str(e)
+        }), 500
+
+
 @broker_bp.route('/farmer/<int:farmer_id>', methods=['GET'])
 def broker_get_farmer(farmer_id: int):
     """Broker endpoint to fetch farmer details by ID for payment modal."""
@@ -3677,6 +3829,12 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
             ensure_weighment_columns(db.engine)
         except Exception as e:
             print('Warning: Failed to ensure weighment columns:', str(e))
+
+        # Ensure transaction UPI tracking columns exist
+        try:
+            ensure_transaction_columns(db.engine)
+        except Exception as e:
+            print('Warning: Failed to ensure transaction columns:', str(e))
 
         # Ensure unique indexes for order_id on weighments and farmer_orders
         try:

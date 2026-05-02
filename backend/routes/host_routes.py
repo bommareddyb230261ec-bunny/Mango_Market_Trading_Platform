@@ -7,14 +7,14 @@ from flask import Blueprint, request, jsonify
 
 try:
     # Try importing from backend context
-    from backend.main import db, Broker, User, Place
+    from backend.main import db, Broker, User, Place, Transaction, Weighment, Farmer, SellRequest
 except (ImportError, ModuleNotFoundError):
     # Fallback for direct module import
     try:
         import sys
         import os
         sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        from main import db, Broker, User, Place
+        from main import db, Broker, User, Place, Transaction, Weighment, Farmer, SellRequest
     except (ImportError, ModuleNotFoundError):
         # Last resort - import what we can
         from main import db
@@ -176,6 +176,167 @@ def get_pending_brokers():
             'success': False,
             'message': f'Failed to fetch pending brokers: {str(e)}'
         }), 500
+
+
+@host_bp.route('/payments/pending', methods=['GET'])
+def get_pending_payments():
+    """
+    Get all payments submitted by brokers that are awaiting host verification.
+    """
+    try:
+        pending_statuses = ["INITIATED", "AWAITING_VERIFICATION", "SUBMITTED"]
+        payments = []
+
+        transactions = Transaction.query.filter(Transaction.payment_status.in_(pending_statuses)).all()
+        for txn in transactions:
+            sell_request = txn.sell_request
+            farmer = None
+            user = None
+            if sell_request:
+                farmer = Farmer.query.get(sell_request.farmer_id)
+                if farmer:
+                    user = User.query.get(farmer.user_id)
+
+            payments.append({
+                'transaction_id': str(txn.id),
+                'type': 'transaction',
+                'order_id': sell_request.order_id if sell_request else 'N/A',
+                'farmer_name': user.name if user else (farmer.name if hasattr(farmer, 'name') else 'Farmer'),
+                'phone': user.phone if user else '-',
+                'amount': float(txn.net_payable or 0),
+                'payment_status': txn.payment_status,
+                'upi_transaction_id': txn.upi_transaction_id or '-',
+                'farmer_price': float(txn.market_price_at_sale or 0)
+            })
+
+        weighments = Weighment.query.filter(Weighment.payment_status.in_(pending_statuses)).all()
+        for weighment in weighments:
+            farmer = None
+            user = None
+            if weighment.farmer_id:
+                farmer = Farmer.query.get(weighment.farmer_id)
+                if farmer:
+                    user = User.query.get(farmer.user_id)
+
+            amount = (weighment.actual_weight_tons or 0) * 1000 * (weighment.final_price_per_kg or 0)
+            payments.append({
+                'transaction_id': f'w-{weighment.id}',
+                'type': 'weighment',
+                'order_id': weighment.order_id or 'N/A',
+                'farmer_name': user.name if user else (weighment.farmer_name or 'Farmer'),
+                'phone': user.phone if user else '-',
+                'amount': float(amount),
+                'payment_status': weighment.payment_status,
+                'upi_transaction_id': weighment.upi_transaction_id or '-',
+                'farmer_price': float(weighment.final_price_per_kg or 0)
+            })
+
+        return jsonify(payments), 200
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'Failed to fetch pending payments: {str(e)}'
+        }), 500
+
+
+@host_bp.route('/payments/<path:transaction_id>/approve', methods=['POST'])
+def approve_payment(transaction_id: str):
+    """
+    Approve a broker-submitted payment and mark it as PAID.
+    """
+    try:
+        if not transaction_id or transaction_id.strip() == '':
+            return jsonify({'success': False, 'message': 'transaction_id is required'}), 400
+
+        transaction_id = transaction_id.strip()
+        is_weighment = False
+        if transaction_id.startswith('w-'):
+            is_weighment = True
+            transaction_id = transaction_id[2:]
+
+        if is_weighment:
+            try:
+                record_id = int(transaction_id)
+            except (ValueError, TypeError):
+                return jsonify({'success': False, 'message': 'Invalid transaction_id format'}), 400
+
+            weighment = Weighment.query.get(record_id)
+            if not weighment:
+                return jsonify({'success': False, 'message': 'Weighment not found'}), 404
+
+            weighment.payment_status = 'PAID'
+            db.session.commit()
+
+            return jsonify({'success': True, 'message': 'Weighment payment approved', 'transaction_id': f'w-{record_id}'}), 200
+
+        try:
+            record_id = int(transaction_id)
+        except (ValueError, TypeError):
+            return jsonify({'success': False, 'message': 'Invalid transaction_id format'}), 400
+
+        transaction = Transaction.query.get(record_id)
+        if not transaction:
+            return jsonify({'success': False, 'message': 'Transaction not found'}), 404
+
+        transaction.payment_status = 'PAID'
+        db.session.commit()
+
+        return jsonify({'success': True, 'message': 'Transaction payment approved', 'transaction_id': record_id}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'Error approving payment: {str(e)}'}), 500
+
+
+@host_bp.route('/payments/<path:transaction_id>/reject', methods=['POST'])
+def reject_payment(transaction_id: str):
+    """
+    Reject a broker-submitted payment and mark the payment record as REJECTED.
+    """
+    try:
+        if not transaction_id or transaction_id.strip() == '':
+            return jsonify({'success': False, 'message': 'transaction_id is required'}), 400
+
+        transaction_id = transaction_id.strip()
+        is_weighment = False
+        if transaction_id.startswith('w-'):
+            is_weighment = True
+            transaction_id = transaction_id[2:]
+
+        reason = (request.get_json() or {}).get('reason', '').strip()
+
+        if is_weighment:
+            try:
+                record_id = int(transaction_id)
+            except (ValueError, TypeError):
+                return jsonify({'success': False, 'message': 'Invalid transaction_id format'}), 400
+
+            weighment = Weighment.query.get(record_id)
+            if not weighment:
+                return jsonify({'success': False, 'message': 'Weighment not found'}), 404
+
+            weighment.payment_status = 'REJECTED'
+            db.session.commit()
+
+            return jsonify({'success': True, 'message': 'Weighment payment rejected', 'transaction_id': f'w-{record_id}', 'reason': reason}), 200
+
+        try:
+            record_id = int(transaction_id)
+        except (ValueError, TypeError):
+            return jsonify({'success': False, 'message': 'Invalid transaction_id format'}), 400
+
+        transaction = Transaction.query.get(record_id)
+        if not transaction:
+            return jsonify({'success': False, 'message': 'Transaction not found'}), 404
+
+        transaction.payment_status = 'REJECTED'
+        db.session.commit()
+
+        return jsonify({'success': True, 'message': 'Transaction payment rejected', 'transaction_id': record_id, 'reason': reason}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'Error rejecting payment: {str(e)}'}), 500
 
 
 @host_bp.route('/brokers/<int:broker_id>/approve', methods=['POST'])

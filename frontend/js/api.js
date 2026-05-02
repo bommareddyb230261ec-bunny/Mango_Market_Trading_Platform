@@ -218,13 +218,14 @@ async function markPaymentInitiated(transactionId) {
 }
 
 /**
- * Mark a payment as completed after the broker confirms the UPI transfer.
+ * Submit the UPI transaction reference after the broker has completed the transfer.
  *
- * @param {string} transactionId - Transaction ID to mark as paid
+ * @param {string} transactionId - Transaction ID to submit
+ * @param {string} upiTransactionId - Broker-entered UPI transaction reference
  * @returns {Promise<{success: boolean, message?: string, error?: string}>}
  */
-async function markPaymentComplete(transactionId) {
-    console.log('Marking payment complete for:', transactionId);
+async function submitUpiTransaction(transactionId, upiTransactionId) {
+    console.log('Submitting UPI transaction id for:', transactionId, upiTransactionId);
 
     try {
         const base = await _ensureApiBase();
@@ -232,11 +233,11 @@ async function markPaymentComplete(transactionId) {
             return { success: false, error: 'Backend not available' };
         }
 
-        const response = await fetch(`${base}/broker/process-payment`, {
+        const response = await fetch(`${base}/broker/submit-upi-transaction`, {
             method: 'POST',
             headers: APIClient.getHeaders(),
             credentials: 'include',
-            body: JSON.stringify({ transaction_id: transactionId })
+            body: JSON.stringify({ transaction_id: transactionId, upi_transaction_id: upiTransactionId })
         });
 
         let json = {};
@@ -246,20 +247,38 @@ async function markPaymentComplete(transactionId) {
 
         if (!response.ok || !json.success) {
             const errorMsg = json.error || json.message || `Server error: ${response.status}`;
-            console.error('Mark payment complete failed:', errorMsg);
+            console.error('Submit UPI transaction failed:', errorMsg);
             return { success: false, error: errorMsg };
         }
 
-        console.log('Payment marked complete:', json);
+        console.log('UPI transaction submitted:', json);
         return json;
 
     } catch (error) {
-        console.error('Network error marking payment complete:', error);
+        console.error('Network error submitting UPI transaction:', error);
         return { success: false, error: 'Network error: ' + error.message };
     }
+}
+
+/**
+ * Mark a payment as completed after the broker confirms the UPI transfer.
+ *
+ * @param {string} transactionId - Transaction ID to mark as paid
+ * @param {string} upiTransactionId - Broker-entered UPI transaction reference
+ * @returns {Promise<{success: boolean, message?: string, error?: string}>}
+ */
+async function markPaymentComplete(transactionId, upiTransactionId) {
+    console.log('Marking payment complete for:', transactionId, upiTransactionId);
+
+    if (!upiTransactionId || upiTransactionId.trim() === '') {
+        return { success: false, error: 'Please enter the UPI transaction ID' };
+    }
+
+    return submitUpiTransaction(transactionId, upiTransactionId);
 }
 
 // Expose functions globally
 window.fetchPaymentDetails = fetchPaymentDetails;
 window.markPaymentInitiated = markPaymentInitiated;
 window.markPaymentComplete = markPaymentComplete;
+window.submitUpiTransaction = submitUpiTransaction;
