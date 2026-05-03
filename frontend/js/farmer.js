@@ -84,6 +84,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.target === sellModal) closeSellModal();
         if (e.target === document.getElementById('successModal')) closeSuccessModal();
         if (e.target === document.getElementById('errorModal')) closeErrorModal();
+        if (e.target === document.getElementById('proofModal')) closeProofModal();
     });
     window.addEventListener('keydown', (e) => { 
         if (e.key === 'Escape') {
@@ -466,49 +467,245 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function loadDashboard() {
+        await Promise.all([
+            loadFarmerRequests(),
+            loadAcceptedRequests(),
+            loadWeighments(),
+            loadPayments()
+        ]);
+    }
+
+    async function loadFarmerRequests() {
+        const tbody = document.getElementById('requestsTableBody');
+        if (!tbody) return;
         try {
-            const res = await fetch(`${API_BASE_URL}/farmer/dashboard`, {
+            const res = await fetch(`${API_BASE_URL}/farmer/requests`, {
                 method: 'GET',
-                headers: {'Content-Type': 'application/json'},
+                headers: { 'Content-Type': 'application/json' },
                 credentials: 'include'
             });
             const data = await res.json();
-            
-            const tbody = document.getElementById('requestsTableBody');
-            if (!tbody) return;
-
-            if(data.requests.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;">No requests found.</td></tr>`;
+            if (!data.success || !Array.isArray(data.requests) || data.requests.length === 0) {
+                showNoDataMessage(tbody, 8, 'No requests found.');
                 return;
             }
 
-                        tbody.innerHTML = data.requests.map(r => `
-                                <tr>
-                                        <td style="padding:10px;">${new Date(r.created_at || r.date).toLocaleDateString()}</td>
-                                        <td style="padding:10px;">${r.variety || '-'}</td>
-                                        <td style="padding:10px;">${r.quantity_tons || r.quantity || '-'}</td>
-                                        <td style="padding:10px; font-weight:bold; color:${getStatusColor(r.status)}">${r.status || 'PENDING'}</td>
-                                        <td style="padding:10px;">
-                                            <div class="market-details">
-                                                <strong>${r.market_name || '-'}</strong><br>
-                                                Broker: ${r.broker_name || '-'}<br>
-                                                Location: ${r.market_location || '-'}
-                                            </div>
-                                        </td>
-                                        <td style="padding:10px;">${r.order_id || '-'}</td>
-                                        <td style="padding:10px;">${r.rejection_reason || '-'}</td>
-                                        <td style="padding:10px;">${r.expected_delivery_date || '-'}</td>
-                                </tr>
-                        `).join('');
-        } catch (e) {
-            console.error("Dashboard Load Error", e);
+            tbody.innerHTML = data.requests.map(r => `
+                <tr>
+                    <td>${formatDate(r.date)}</td>
+                    <td>${safeText(r.order_id)}</td>
+                    <td>${safeText(r.variety)}</td>
+                    <td class="amount right">${safeText(r.quantity_tons)}</td>
+                            <td>
+                        <div class="market-details" title="${r.market_location ? `Location: ${safeText(r.market_location)}` : 'Market details'}">
+                            <strong>${safeText(r.market_name)}</strong>
+                            <span>Broker: ${safeText(r.broker_name)}</span>
+                        </div>
+                    </td>
+                    <td>${safeText(r.expected_delivery_date)}</td>
+                    <td class="status-col">${renderStatusBadge(r.status)}</td>
+                    <td>${safeText(r.rejection_reason)}</td>
+                </tr>
+            `).join('');
+        } catch (err) {
+            console.error('loadFarmerRequests failed', err);
+            showNoDataMessage(tbody, 8, 'Unable to load requests.');
         }
     }
 
-    function getStatusColor(status) {
-        if(status === 'ACCEPTED') return 'green';
-        if(status === 'REJECTED') return 'red';
-        return 'orange';
+    async function loadAcceptedRequests() {
+        const tbody = document.getElementById('acceptedTableBody');
+        if (!tbody) return;
+        try {
+            const res = await fetch(`${API_BASE_URL}/farmer/accepted`, {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include'
+            });
+            const data = await res.json();
+            if (!data.success || !Array.isArray(data.requests) || data.requests.length === 0) {
+                showNoDataMessage(tbody, 7, 'No accepted requests found.');
+                return;
+            }
+
+            tbody.innerHTML = data.requests.map(r => `
+                <tr>
+                    <td>${formatDate(r.date)}</td>
+                    <td>${safeText(r.order_id)}</td>
+                    <td>${safeText(r.variety)}</td>
+                    <td class="amount right">${safeText(r.quantity_tons)}</td>
+                    <td>
+                        <div class="market-details">
+                            <strong>${safeText(r.market_name)}</strong>
+                        </div>
+                    </td>
+                    <td class="amount right">${formatCurrency(r.agreed_price)}</td>
+                    <td>${safeText(r.expected_delivery_date)}</td>
+                </tr>
+            `).join('');
+        } catch (err) {
+            console.error('loadAcceptedRequests failed', err);
+            showNoDataMessage(tbody, 7, 'Unable to load accepted requests.');
+        }
+    }
+
+    async function loadWeighments() {
+        const tbody = document.getElementById('weighmentsTableBody');
+        if (!tbody) return;
+        try {
+            const res = await fetch(`${API_BASE_URL}/farmer/weighments`, {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include'
+            });
+            const data = await res.json();
+            if (!data.success || !Array.isArray(data.weighments) || data.weighments.length === 0) {
+                showNoDataMessage(tbody, 11, 'No weighment records available.');
+                return;
+            }
+
+            tbody.innerHTML = data.weighments.map(w => `
+                <tr>
+                    <td>${formatDate(w.order_date)}</td>
+                    <td>${safeText(w.order_id)}</td>
+                    <td>${safeText(w.variety)}</td>
+                    <td>
+                        <div class="market-details">
+                            <strong>${safeText(w.market_name)}</strong>
+                        </div>
+                    </td>
+                    <td class="amount right">${formatCurrency(w.agreed_price)}</td>
+                    <td>${formatDate(w.weighment_date)}</td>
+                    <td class="amount right">${safeText(w.final_weight_tons)}</td>
+                    <td class="amount right">${formatCurrency(w.final_price_per_kg)}</td>
+                    <td class="amount right">${w.total_amount !== null ? formatCurrency(w.total_amount) : '-'}</td>
+                    <td class="amount right">${w.commission !== null ? formatCurrency(w.commission) : '-'}</td>
+                    <td class="status-col">${renderStatusBadge(w.payment_status, 'payment')}</td>
+                </tr>
+            `).join('');
+        } catch (err) {
+            console.error('loadWeighments failed', err);
+            showNoDataMessage(tbody, 10, 'Unable to load weighment details.');
+        }
+    }
+
+    async function loadPayments() {
+        const tbody = document.getElementById('paymentsTableBody');
+        if (!tbody) return;
+        try {
+            const res = await fetch(`${API_BASE_URL}/farmer/payments`, {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include'
+            });
+            const data = await res.json();
+            if (!data.success || !Array.isArray(data.payments) || data.payments.length === 0) {
+                showNoDataMessage(tbody, 9, 'No payment records found.');
+                return;
+            }
+
+            tbody.innerHTML = data.payments.map(tx => `
+                <tr>
+                    <td>${formatDate(tx.payment_date)}</td>
+                    <td>${safeText(tx.order_id)}</td>
+                    <td>${safeText(tx.variety)}</td>
+                    <td>
+                        <div class="market-details">
+                            <strong>${safeText(tx.market_name)}</strong>
+                        </div>
+                    </td>
+                    <td class="amount right">${formatCurrency(tx.total_amount_debited)}</td>
+                    <td class="status-col">${renderStatusBadge(tx.payment_status, 'payment')}</td>
+                    <td>${tx.payment_proof_url ? `<button class="btn-secondary" type="button" onclick="showProofModal('${encodeURI(tx.payment_proof_url)}')">View Proof</button>` : '-'}</td>
+                    <td>${safeText(tx.transaction_id)}</td>
+                    <td>${safeText(tx.upi_transaction_id)}</td>
+                </tr>
+            `).join('');
+        } catch (err) {
+            console.error('loadPayments failed', err);
+            showNoDataMessage(tbody, 9, 'Unable to load payments.');
+        }
+    }
+
+    function renderStatusBadge(status, type = 'request') {
+        if (!status) status = 'PENDING';
+        const normalized = String(status).trim().toUpperCase();
+        let badgeClass = 'status-badge pending';
+        let label = normalized;
+
+        if (['ACCEPTED', 'PAID', 'COMPLETED'].includes(normalized)) {
+            badgeClass = 'status-badge success';
+            label = normalized === 'COMPLETED' ? 'COMPLETED' : normalized;
+        } else if (['REJECTED', 'FAILED', 'CANCELLED'].includes(normalized)) {
+            badgeClass = 'status-badge danger';
+            label = normalized;
+        } else if (['AWAITING_VERIFICATION', 'INITIATED', 'PENDING', 'PROCESSING'].includes(normalized)) {
+            badgeClass = 'status-badge warning';
+            label = normalized === 'AWAITING_VERIFICATION' ? 'Admin Verification' : (normalized === 'INITIATED' ? 'Pending' : normalized);
+        }
+
+        return `<span class="${badgeClass}">${label}</span>`;
+    }
+
+    function formatCurrency(value) {
+        if (value === null || typeof value === 'undefined' || value === '') return '-';
+        const num = Number(value);
+        if (Number.isNaN(num)) return '-';
+        return `₹${num.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+
+    function formatDate(value) {
+        if (!value) return '-';
+        try {
+            const d = new Date(value);
+            if (Number.isNaN(d.getTime())) return value;
+            return d.toLocaleDateString('en-IN', { year: 'numeric', month: '2-digit', day: '2-digit' });
+        } catch (e) {
+            return value;
+        }
+    }
+
+    function safeText(value) {
+        if (value === null || typeof value === 'undefined' || value === '') return '-';
+        return String(value);
+    }
+
+    function showNoDataMessage(body, columnCount, message) {
+        body.innerHTML = `<tr><td colspan="${columnCount}" style="text-align:center; padding:24px; color:#555;">${message}</td></tr>`;
+    }
+
+    window.showProofModal = function(proofUrl) {
+        const modal = document.getElementById('proofModal');
+        const image = document.getElementById('proofImage');
+        const link = document.getElementById('proofLink');
+        const text = document.getElementById('proofModalText');
+
+        if (!modal || !link || !text) return;
+
+        text.textContent = proofUrl ? 'Proof is available below. If the preview cannot be loaded, open it in a new tab.' : 'No payment proof is attached to this transaction.';
+        link.href = proofUrl || '#';
+        link.style.display = proofUrl ? 'inline-block' : 'none';
+
+        if (image) {
+            if (proofUrl && proofUrl.match(/\.(png|jpg|jpeg|webp|gif)$/i)) {
+                image.src = proofUrl;
+                image.style.display = 'block';
+            } else {
+                image.style.display = 'none';
+            }
+        }
+
+        modal.classList.add('show');
+        document.body.style.overflow = 'hidden';
+    };
+
+    function closeProofModal() {
+        const modal = document.getElementById('proofModal');
+        const image = document.getElementById('proofImage');
+        if (!modal) return;
+        modal.classList.remove('show');
+        document.body.style.overflow = '';
+        if (image) image.src = '';
     }
 
     // Bank OTP state

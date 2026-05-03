@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payments | Mango Market Farmer</title>
+    <link rel="stylesheet" href="../css/farmer-base.css">
+    <link rel="stylesheet" href="../css/farmer-sections.css">
+</head>
+<body>
+    <header class="page-header">
+        <div class="page-header__brand">
+            <a href="../farmer_dashboard.html" class="brand-link">
+                <span class="brand-logo">🥭</span>
+                <div>
+                    <h1>Mango Market</h1>
+                    <p>Payments</p>
+                </div>
+            </a>
+        </div>
+        <nav class="page-nav">
+            <a href="../farmer_dashboard.html">Dashboard</a>
+            <a href="my_requests.html">Requests</a>
+            <a href="accepted_requests.html">Accepted</a>
+            <a href="weighment.html">Weighment</a>
+            <button id="logoutBtn" class="btn-link">Logout</button>
+        </nav>
+    </header>
+
+    <main class="page-content">
+        <div class="section-header">
+            <div>
+                <h2 class="section-title">Payments</h2>
+                <p class="section-subtitle">Search and review payment records with order and variety context.</p>
+            </div>
+        </div>
+
+        <div class="table-wrapper">
+            <table class="dashboard-table">
+                <thead>
+                    <tr>
+                        <th>Payment Date</th>
+                        <th>Order ID</th>
+                        <th>Variety</th>
+                        <th>Market Name</th>
+                        <th class="amount">Total Amount Debited</th>
+                        <th class="status-col">Status</th>
+                        <th>Payment Proof</th>
+                        <th>Transaction ID</th>
+                        <th>UPI Transaction ID</th>
+                    </tr>
+                </thead>
+                <tbody id="paymentsTableBody"></tbody>
+            </table>
+        </div>
+
+        <div id="proofModal" class="modal">
+            <div class="modal-content" style="max-width:520px; width:100%;">
+                <span class="close-modal" onclick="closeProofModal()">&times;</span>
+                <h3 style="margin-bottom:1rem;">Payment Proof</h3>
+                <p id="proofModalText" style="margin-bottom:1rem; color:var(--text-medium);"></p>
+                <img id="proofImage" src="" alt="Payment proof preview" style="width:100%; max-height:380px; object-fit:contain; display:none; border-radius:12px; margin-bottom:1rem;" />
+                <a id="proofLink" href="#" target="_blank" style="display:none; padding:12px 18px; background:var(--secondary-green); color:#fff; text-decoration:none; border-radius:10px; font-weight:700;">Open proof in new tab</a>
+            </div>
+        </div>
+    </main>
+
+    <script src="../js/api.js"></script>
+    <script src="../js/farmer-common.js"></script>
+    <script src="../js/farmer_payments.js"></script>
+</body>
+</html>

@@ -64,18 +64,14 @@ body {
 
 /* ================= HEADER ================= */
 header {
-    background: var(--white);
-    border-bottom: 2px solid var(--border-color-light);
-    padding: 1.2rem 0;
+    background: linear-gradient(135deg, var(--white) 0%, #f8fbf7 100%);
+    border-bottom: 1px solid rgba(46, 125, 50, 0.1);
+    padding: 1rem 0;
     position: sticky;
     top: 0;
     z-index: 100;
-    box-shadow: var(--card-shadow);
-    transition: box-shadow 0.3s ease;
-}
-
-header:hover {
-    box-shadow: var(--card-shadow-lg);
+    box-shadow: 0 2px 16px rgba(46, 125, 50, 0.1);
+    transition: all 0.3s ease;
 }
 
 .container {
@@ -106,14 +102,14 @@ header:hover {
 
 .brand span {
     font-size: 0.75rem;
-    background: linear-gradient(135deg, var(--light-green), #c8e6c9);
-    color: var(--primary-green-dark);
-    padding: 6px 12px;
+    background: linear-gradient(135deg, var(--secondary-green) 0%, #45a049 100%);
+    color: var(--white);
+    padding: 6px 14px;
     border-radius: var(--radius-sm);
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    box-shadow: var(--card-shadow);
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.25);
 }
 
 .nav-links {
@@ -194,55 +190,99 @@ header:hover {
 
 /* Tab Navigation */
 .tab-nav {
+    margin-bottom: 24px;
+    border-bottom: 2px solid rgba(46, 125, 50, 0.15);
     display: flex;
-    gap: var(--spacing-lg);
-    border-bottom: 3px solid var(--border-color-light);
-    margin-bottom: var(--spacing-xl);
-    padding: 0 0 var(--spacing-sm) 0;
+    align-items: center;
+    gap: 8px;
+    position: relative;
+    padding-right: 12px;
     flex-wrap: wrap;
+    background: linear-gradient(180deg, rgba(255,255,255,0.6), transparent);
+    padding-bottom: 12px;
+    justify-content: center;
 }
 
 .tab-btn {
+    padding: 12px 20px;
+    cursor: pointer;
     background: none;
     border: none;
-    padding: 12px 16px;
+    font-size: 15px;
+    color: #666;
+    border-radius: 6px;
     font-family: inherit;
-    font-size: 1.05rem;
-    color: var(--text-light);
-    cursor: pointer;
-    position: relative;
     transition: all 0.3s ease;
     font-weight: 600;
-    text-transform: capitalize;
-    border-radius: var(--radius-md) var(--radius-md) 0 0;
+    position: relative;
+    letter-spacing: 0.3px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.tab-icon {
+    font-size: 1.2rem;
+    display: inline-block;
+    transition: transform 0.3s ease;
+}
+
+.tab-label {
+    display: inline-block;
 }
 
 .tab-btn:hover {
-    color: var(--primary-green);
-    background-color: rgba(46, 125, 50, 0.05);
+    background: rgba(76, 175, 80, 0.08);
+    color: #28a745;
+}
+
+.tab-btn:hover .tab-icon {
+    transform: scale(1.15);
 }
 
 .tab-btn.active {
-    color: var(--primary-green);
-    font-weight: 800;
-    background-color: var(--light-green);
+    color: #28a745;
+    font-weight: 700;
+    background: rgba(76, 175, 80, 0.06);
 }
 
 .tab-btn.active::after {
     content: '';
     position: absolute;
-    bottom: -3px;
+    bottom: -14px;
     left: 0;
-    width: 100%;
+    right: 0;
     height: 3px;
-    background: var(--primary-green);
-    border-radius: 3px 3px 0 0;
+    background: linear-gradient(90deg, #28a745, #4caf50);
+    border-radius: 2px 2px 0 0;
+}
+
+.tab-actions {
+    display: inline-block;
+}
+
+.top-action {
+    padding: 8px 14px;
+    display: inline-block;
+    text-decoration: none;
+    background: none;
+    color: #4b4b4b;
+    font-weight: 700;
+    border-radius: 6px;
+    border: 2px solid transparent;
+    transition: background-color .15s, color .15s;
+}
+
+.top-action:hover {
+    background: rgba(0, 0, 0, 0.03);
+    color: #1f7a34;
 }
 
 /* Tab Content */
 .tab-content {
     display: none;
-    animation: fadeIn 0.4s ease;
 }
 
 .tab-content.active {
@@ -262,13 +302,13 @@ header:hover {
 
 /* ================= SECTION 1: SEARCH & MARKETS ================= */
 .search-container {
-    background: var(--green-gradient);
-    padding: var(--spacing-xl);
+    background: linear-gradient(135deg, #2e7d32 0%, #1b5e20 50%, #145a2e 100%);
+    padding: 48px 32px;
     border-radius: var(--radius-lg);
     color: var(--white);
     text-align: center;
     margin-bottom: var(--spacing-xl);
-    box-shadow: var(--card-shadow-lg);
+    box-shadow: 0 12px 32px rgba(46, 125, 50, 0.25);
     position: relative;
     overflow: hidden;
 }
@@ -278,19 +318,39 @@ header:hover {
     position: absolute;
     top: -50%;
     right: -10%;
+    width: 400px;
+    height: 400px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.03));
+    z-index: 0;
+    animation: float 6s ease-in-out infinite;
+}
+
+.search-container::after {
+    content: '';
+    position: absolute;
+    bottom: -30%;
+    left: -5%;
     width: 300px;
     height: 300px;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.1);
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.02));
     z-index: 0;
+    animation: float 8s ease-in-out infinite reverse;
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(20px); }
 }
 
 .search-container h2 {
-    margin-bottom: var(--spacing-lg);
+    margin-bottom: 28px;
     font-weight: 700;
-    font-size: 1.8rem;
+    font-size: 2rem;
     position: relative;
     z-index: 1;
+    letter-spacing: -0.5px;
 }
 
 .search-form {
@@ -307,11 +367,11 @@ header:hover {
 .search-select {
     flex: 1;
     min-width: 150px;
-    padding: 12px 16px;
+    padding: 14px 18px;
     border: none;
     border-radius: var(--radius-md);
     font-size: 1rem;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
     background: var(--white);
     color: var(--text-dark);
     font-weight: 500;
@@ -320,37 +380,39 @@ header:hover {
 }
 
 .search-select:hover {
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.2);
+    transform: translateY(-2px);
 }
 
 .search-select:focus {
     outline: none;
-    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3);
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.2);
 }
 
 .btn-primary {
-    background-color: var(--accent-orange);
+    background: linear-gradient(135deg, var(--accent-orange) 0%, #ff9100 100%);
     color: var(--white);
     border: none;
-    padding: 12px 32px;
+    padding: 14px 36px;
     border-radius: var(--radius-md);
     font-weight: 700;
     font-size: 1rem;
     cursor: pointer;
-    box-shadow: 0 4px 12px rgba(255, 152, 0, 0.3);
-    transition: all 0.3s ease;
+    box-shadow: 0 6px 20px rgba(255, 152, 0, 0.35);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.6px;
 }
 
 .btn-primary:hover {
-    background-color: var(--accent-orange-dark);
-    transform: translateY(-3px);
-    box-shadow: 0 8px 20px rgba(255, 152, 0, 0.4);
+    background: linear-gradient(135deg, var(--accent-orange-dark) 0%, #e65100 100%);
+    transform: translateY(-4px);
+    box-shadow: 0 12px 28px rgba(255, 152, 0, 0.45);
 }
 
 .btn-primary:active {
-    transform: translateY(-1px);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(255, 152, 0, 0.35);
 }
 
 /* Market List Header */
@@ -359,30 +421,46 @@ header:hover {
     justify-content: space-between;
     align-items: center;
     margin-bottom: var(--spacing-lg);
-    padding: var(--spacing-md) 0;
+    padding: 20px 0;
+    border-bottom: 1px solid var(--border-color-light);
 }
 
 .market-list-header h3 {
-    font-size: 1.4rem;
+    font-size: 1.5rem;
     color: var(--text-dark);
     font-weight: 700;
+    letter-spacing: -0.3px;
+}
+
+.sort-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.sort-controls label {
+    font-weight: 600;
+    color: var(--text-medium);
+    font-size: 0.95rem;
 }
 
 .sort-select {
-    padding: 10px 14px;
+    padding: 10px 16px;
     border: 2px solid var(--border-color);
     border-radius: var(--radius-md);
     background: var(--white);
     color: var(--text-medium);
     font-size: 0.95rem;
-    font-weight: 500;
+    font-weight: 600;
     transition: all 0.3s ease;
     cursor: pointer;
+    min-width: 180px;
 }
 
 .sort-select:hover {
     border-color: var(--secondary-green);
-    background-color: var(--light-green);
+    background: linear-gradient(135deg, var(--white), var(--light-green));
+    box-shadow: 0 4px 12px rgba(46, 125, 50, 0.1);
 }
 
 .sort-select:focus {
@@ -394,13 +472,13 @@ header:hover {
 /* Market Cards */
 .market-card {
     background: var(--white);
-    border: 2px solid var(--border-color-light);
+    border: 1px solid var(--border-color-light);
     border-radius: var(--radius-lg);
     padding: var(--spacing-lg);
     margin-bottom: var(--spacing-lg);
-    box-shadow: var(--card-shadow);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.07);
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    border-left: 5px solid transparent;
+    border-left: 4px solid transparent;
     position: relative;
 }
 
@@ -469,10 +547,10 @@ header:hover {
 }
 
 .market-card:hover {
-    transform: translateY(-6px);
-    box-shadow: var(--hover-shadow);
+    transform: translateY(-8px);
+    box-shadow: 0 16px 32px rgba(46, 125, 50, 0.15);
     border-left-color: var(--secondary-green);
-    border-color: var(--secondary-green);
+    border-color: rgba(76, 175, 80, 0.2);
 }
 
 .market-card:hover::before {
@@ -511,117 +589,150 @@ header:hover {
     background: var(--white);
     border-radius: var(--radius-lg);
     overflow: hidden;
-    box-shadow: var(--card-shadow);
-    border: 1px solid var(--border-color-light);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+    border: 1px solid rgba(46, 125, 50, 0.08);
+    padding: var(--spacing-xl);
 }
 
 .dashboard-table {
     width: 100%;
     border-collapse: separate;
-    border-spacing: 0;
-    background: var(--white);
+    border-spacing: 0 10px;
+    background: transparent;
+}
+
+.dashboard-table thead tr {
+    background: transparent;
+}
+
+.dashboard-table th,
+.dashboard-table td {
+    padding: 14px 18px;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    vertical-align: middle;
 }
 
 .dashboard-table th {
-    background: linear-gradient(135deg, #f5f5f5, #f9f9f9);
+    background: linear-gradient(135deg, #f5f8f5, #f0f6f0);
     color: var(--text-dark);
     font-weight: 700;
     text-transform: uppercase;
-    font-size: 0.8rem;
-    padding: 18px var(--spacing-md);
-    border-bottom: 2px solid var(--border-color);
-    text-align: left;
-    letter-spacing: 0.4px;
+    font-size: 0.85rem;
+    border-bottom: 2px solid rgba(46, 125, 50, 0.1);
+    letter-spacing: 0.35px;
+    padding: 16px 18px;
 }
 
-.dashboard-table td {
-    padding: 16px var(--spacing-md);
-    border-bottom: 1px solid var(--border-color-light);
-    font-size: 0.95rem;
-    color: var(--text-medium);
-    transition: background-color 0.2s ease;
+.dashboard-table tbody tr {
+    background: var(--white);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(229, 235, 233, 0.8);
 }
 
-.dashboard-table tr:last-child td {
-    border-bottom: none;
+.dashboard-table tbody tr:nth-child(odd) {
+    background: rgba(248, 251, 249, 0.7);
 }
 
 .dashboard-table tbody tr:hover {
-    background-color: var(--light-gray);
-    transition: background-color 0.2s ease;
+    background: linear-gradient(135deg, #f5faf4, #f0f8ef);
+    box-shadow: 0 6px 16px rgba(46, 125, 50, 0.1);
 }
 
 .dashboard-table tbody tr:hover td {
-    color: var(--primary-green);
+    color: var(--text-dark);
 }
 
-/* Market details in history table */
+.dashboard-table th.amount,
+.dashboard-table td.amount,
+.dashboard-table td.right {
+    text-align: right;
+}
+
+.dashboard-table th.status-col,
+.dashboard-table td.status-col {
+    text-align: center;
+}
+
+.dashboard-table td.amount,
+.dashboard-table td.price {
+    font-weight: 700;
+    color: var(--text-dark);
+}
+
 .market-details {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-width: 280px;
     line-height: 1.4;
 }
 
 .market-details strong {
-    color: #2c7a2c;
+    color: var(--text-dark);
 }
 
-/* Status Badges */
+.market-details span {
+    color: var(--text-medium);
+    font-size: 0.92rem;
+}
+
 .status-badge {
-    display: inline-block;
-    padding: 6px 12px;
-    border-radius: 20px;
-    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 100px;
+    height: 36px;
+    border-radius: 999px;
+    padding: 0 14px;
+    font-weight: 700;
     font-size: 0.85rem;
     text-transform: uppercase;
     letter-spacing: 0.3px;
-    transition: all 0.3s ease;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
 }
 
 .status-badge.success {
-    background-color: #c8e6c9;
+    background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
     color: #1b5e20;
     border: 1px solid #81c784;
 }
 
-.status-badge.success:hover {
-    background-color: #81c784;
-    color: var(--white);
-    box-shadow: 0 4px 8px rgba(46, 125, 50, 0.3);
-}
-
 .status-badge.warning {
-    background-color: #ffe0b2;
+    background: linear-gradient(135deg, #fff8e1, #ffd54f);
     color: #e65100;
     border: 1px solid #ffb74d;
 }
 
-.status-badge.warning:hover {
-    background-color: #ffb74d;
-    color: var(--white);
-    box-shadow: 0 4px 8px rgba(255, 152, 0, 0.3);
-}
-
 .status-badge.danger {
-    background-color: #ffcdd2;
+    background: linear-gradient(135deg, #ffebee, #ef9a9a);
     color: #b71c1c;
-    border: 1px solid #ef5350;
-}
-
-.status-badge.danger:hover {
-    background-color: #ef5350;
-    color: var(--white);
-    box-shadow: 0 4px 8px rgba(229, 57, 53, 0.3);
+    border: 1px solid #e57373;
 }
 
 .status-badge.pending {
-    background-color: #bbdefb;
+    background: linear-gradient(135deg, #e3f2fd, #bbdefb);
     color: #0d47a1;
     border: 1px solid #64b5f6;
 }
 
-.status-badge.pending:hover {
-    background-color: #64b5f6;
-    color: var(--white);
-    box-shadow: 0 4px 8px rgba(25, 118, 210, 0.3);
+.btn-secondary {
+    padding: 10px 20px;
+    border-radius: var(--radius-md);
+    font-weight: 700;
+    letter-spacing: 0.4px;
+}
+
+@media (max-width: 900px) {
+    .dashboard-table th,
+    .dashboard-table td {
+        padding: 12px 14px;
+    }
+
+    .market-details {
+        max-width: 200px;
+    }
 }
 
 /* ================= SECTION 3: FORMS & INPUTS ================= */
@@ -643,7 +754,7 @@ header:hover {
 .form-group select,
 .form-group textarea {
     width: 100%;
-    padding: 12px 16px;
+    padding: 13px 16px;
     border: 2px solid var(--border-color);
     border-radius: var(--radius-md);
     font-size: 1rem;
@@ -662,7 +773,8 @@ header:hover {
 .form-group select:hover,
 .form-group textarea:hover {
     border-color: var(--tertiary-green);
-    background-color: var(--light-green);
+    background: linear-gradient(135deg, var(--white), var(--light-green));
+    box-shadow: 0 4px 12px rgba(46, 125, 50, 0.08);
 }
 
 .form-group input:focus,
@@ -670,7 +782,7 @@ header:hover {
 .form-group textarea:focus {
     outline: none;
     border-color: var(--primary-green);
-    box-shadow: var(--focus-shadow);
+    box-shadow: 0 0 0 4px rgba(76, 175, 80, 0.15);
     background-color: var(--white);
 }
 
@@ -682,32 +794,32 @@ header:hover {
 
 /* ================= BUTTONS ================= */
 .btn-secondary {
-    background-color: var(--white);
+    background: linear-gradient(135deg, var(--white), #f5f8f5);
     color: var(--primary-green);
     border: 2px solid var(--primary-green);
-    padding: 12px 28px;
+    padding: 13px 28px;
     border-radius: var(--radius-md);
     font-weight: 700;
     font-size: 1rem;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
 
 .btn-secondary:hover {
-    background-color: var(--primary-green);
+    background: linear-gradient(135deg, var(--primary-green), #1b5e20);
     color: var(--white);
-    box-shadow: 0 4px 12px rgba(46, 125, 50, 0.3);
-    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(46, 125, 50, 0.3);
+    transform: translateY(-3px);
 }
 
 .btn-secondary:active {
-    transform: translateY(0);
+    transform: translateY(-1px);
 }
 
 .btn-danger {
-    background-color: var(--accent-red);
+    background: linear-gradient(135deg, var(--accent-red), #c62828);
     color: var(--white);
     border: none;
     padding: 10px 20px;
@@ -719,8 +831,9 @@ header:hover {
 }
 
 .btn-danger:hover {
-    background-color: #c62828;
-    box-shadow: 0 4px 12px rgba(229, 57, 53, 0.3);
+    background: linear-gradient(135deg, #c62828, #b71c1c);
+    box-shadow: 0 6px 16px rgba(229, 57, 53, 0.3);
+    transform: translateY(-2px);
 }
 
 /* ================= MODAL ================= */
@@ -732,66 +845,50 @@ header:hover {
     top: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(5px);
-    -webkit-backdrop-filter: blur(5px);
-    animation: fadeInModal 0.3s ease;
-}
-
-@keyframes fadeInModal {
-    from {
-        opacity: 0;
-    }
-    to {
-        opacity: 1;
-    }
-}
-
-.modal.show {
-    display: flex;
+    background-color: rgba(0, 0, 0, 0.55);
     align-items: center;
     justify-content: center;
 }
 
-.modal-content {
-    background-color: var(--white);
-    padding: var(--spacing-xl);
-    border-radius: var(--radius-lg);
-    width: 500px;
-    max-width: 90%;
-    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
-    position: relative;
-    animation: slideDown 0.3s ease;
+.modal.show {
+    display: flex;
 }
 
-@keyframes slideDown {
+.modal-content {
+    background: linear-gradient(135deg, var(--white), #f8fbf7);
+    padding: 32px;
+    border-radius: var(--radius-lg);
+    width: 400px;
+    max-width: 90%;
+    box-shadow: 0 20px 60px rgba(46, 125, 50, 0.2);
+    animation: slideIn 0.3s ease;
+    border: 1px solid rgba(46, 125, 50, 0.1);
+}
+
+@keyframes slideIn {
     from {
-        transform: translateY(-40px);
         opacity: 0;
+        transform: translateY(-40px);
     }
     to {
-        transform: translateY(0);
         opacity: 1;
+        transform: translateY(0);
     }
 }
 
 .close-modal {
-    position: absolute;
-    right: var(--spacing-lg);
-    top: var(--spacing-lg);
+    float: right;
     font-size: 28px;
-    color: var(--text-light);
+    font-weight: bold;
     cursor: pointer;
-    transition: all 0.3s ease;
+    color: #999;
+    transition: color 0.2s;
     background: none;
     border: none;
-    font-weight: 400;
-    line-height: 1;
 }
 
 .close-modal:hover {
-    color: var(--primary-green);
-    transform: rotate(90deg);
+    color: #333;
 }
 
 .modal-content h3 {
@@ -809,14 +906,14 @@ header:hover {
 
 /* ================= FOOTER ================= */
 footer {
-    background-color: var(--white);
+    background: linear-gradient(135deg, var(--white), #f5f8f5);
     color: var(--text-light);
     padding: var(--spacing-xl) 0;
     text-align: center;
-    border-top: 2px solid var(--border-color-light);
+    border-top: 1px solid rgba(46, 125, 50, 0.1);
     margin-top: auto;
     font-size: 0.9rem;
-    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.03);
+    box-shadow: 0 -2px 8px rgba(46, 125, 50, 0.05);
 }
 
 footer p {
@@ -1087,4 +1184,123 @@ footer a:hover {
 
 ::-webkit-scrollbar-thumb:hover {
     background: var(--primary-green);
+}
+
+/* ================= ENHANCED DESIGN TOUCHES ================= */
+
+/* Empty State Improvements */
+.empty-state {
+    text-align: center;
+    padding: 48px 24px;
+    color: var(--text-medium);
+    background: linear-gradient(135deg, #f5faf4, #eef6ed);
+    border-radius: var(--radius-lg);
+    border: 2px dashed rgba(46, 125, 50, 0.2);
+    margin: 24px 0;
+}
+
+.empty-state p {
+    font-size: 1.1rem;
+    font-weight: 500;
+    margin: 0;
+}
+
+/* Enhanced Link Styling */
+a {
+    transition: all 0.3s ease;
+}
+
+/* Smooth Transitions */
+input:not([type="submit"]):not([type="button"]),
+select,
+textarea,
+button {
+    transition: all 0.3s ease;
+}
+
+/* Focus Visible for Accessibility */
+:focus-visible {
+    outline: 2px solid var(--secondary-green);
+    outline-offset: 2px;
+}
+
+/* Enhanced Text Selection */
+::selection {
+    background: var(--secondary-green);
+    color: var(--white);
+}
+
+/* Smooth animations for cards and elements */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.market-card {
+    animation: fadeInUp 0.4s ease-out;
+}
+
+/* Tab Content Animation */
+.tab-content.active {
+    animation: fadeInUp 0.3s ease;
+}
+
+/* Improved Loading State */
+.loading {
+    position: relative;
+    color: transparent;
+}
+
+.loading::after {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    top: 50%;
+    left: 50%;
+    margin-left: -8px;
+    margin-top: -8px;
+    border: 2px solid rgba(76, 175, 80, 0.3);
+    border-radius: 50%;
+    border-top-color: var(--secondary-green);
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Improved form styling */
+.form-group {
+    animation: fadeInUp 0.4s ease-out;
+}
+
+/* Better responsive tables */
+@media (max-width: 1024px) {
+    .dashboard-table th,
+    .dashboard-table td {
+        padding: 12px 14px;
+        font-size: 0.9rem;
+    }
+}
+
+/* Hover effects for interactive elements */
+.market-card,
+.modal-content {
+    position: relative;
+}
+
+/* Accessibility: High contrast mode support */
+@media (prefers-contrast: more) {
+    :root {
+        --text-dark: #000000;
+        --text-medium: #262626;
+        --border-color: #000000;
+    }
 }

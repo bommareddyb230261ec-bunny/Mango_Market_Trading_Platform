@@ -8,6 +8,7 @@ Main Flask application (Consolidated)
 # =====================================================
 import os
 import logging
+import time
 from datetime import datetime, timezone, date
 from typing import Optional, Any, cast, List, Dict, Union, Tuple
 from dotenv import load_dotenv
@@ -26,7 +27,7 @@ from flask_sqlalchemy import SQLAlchemy
 # SQLALCHEMY
 # =====================================================
 from sqlalchemy import text, asc, desc, func
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlalchemy.pool import StaticPool, QueuePool
 
 # Use centralized DB URL builder. Try package import first, fall back to local module when
@@ -573,8 +574,13 @@ def ensure_sell_request_columns(engine: Any):
     """
     try:
         with engine.connect() as conn:
-            result = conn.execute(text("PRAGMA table_info('sell_requests')"))
-            cols = [r[1] for r in result]
+            dialect = engine.dialect.name.lower()
+            if dialect in ('mysql', 'mariadb'):
+                result = conn.execute(text("SHOW COLUMNS FROM sell_requests"))
+                cols = [r[0] for r in result]
+            else:
+                result = conn.execute(text("PRAGMA table_info('sell_requests')"))
+                cols = [r[1] for r in result]
 
             # Column additions if missing
             if 'order_id' not in cols:
@@ -653,8 +659,14 @@ def ensure_broker_columns(engine: Any):
     """
     try:
         with engine.connect() as conn:
-            result = conn.execute(text("PRAGMA table_info('brokers')"))
-            cols = [r[1] for r in result]
+            dialect = engine.dialect.name.lower()
+            if dialect in ('mysql', 'mariadb'):
+                result = conn.execute(text("SHOW COLUMNS FROM brokers"))
+                cols = [r[0] for r in result]
+            else:
+                result = conn.execute(text("PRAGMA table_info('brokers')"))
+                cols = [r[1] for r in result]
+
             if 'trade_license' not in cols:
                 conn.execute(text("ALTER TABLE brokers ADD COLUMN trade_license TEXT"))
             if 'verification_status' not in cols:
@@ -1783,6 +1795,191 @@ def farmer_dashboard():
             'message': 'Failed to load dashboard',
             'error': str(e)
         }), 500
+
+
+@farmer_bp.route('/requests', methods=['GET'])
+def get_farmer_requests():
+    farmer = get_current_farmer()
+    if not farmer:
+        return jsonify({'success': False, 'error': 'Unauthorized'}), 401
+
+    try:
+        requests = SellRequest.query.filter_by(farmer_id=farmer.id).order_by(_desc(SellRequest.created_at)).all()
+        data = []
+        for req in requests:
+            broker_name = req.broker.user.name if getattr(req.broker, 'user', None) else None
+            market_name = req.broker.market_name if getattr(req.broker, 'market_name', None) else None
+            market_location = None
+            try:
+                place = getattr(req.broker, 'place', None)
+                if place:
+                    market_location = f"{place.market_area}, {place.state}"
+            except Exception:
+                market_location = None
+
+            data.append({
+                'id': req.id,
+                'date': req.preferred_date.strftime('%Y-%m-%d') if req.preferred_date else req.created_at.strftime('%Y-%m-%d'),
+                'variety': req.variety,
+                'quantity_tons': float(req.quantity_tons) if req.quantity_tons is not None else None,
+                'status': req.status,
+                'market_name': market_name,
+                'broker_name': broker_name,
+                'market_location': market_location,
+                'order_id': req.order_id,
+                'rejection_reason': req.rejection_reason,
+                'expected_delivery_date': req.expected_delivery_date.strftime('%Y-%m-%d') if req.expected_delivery_date else None
+            })
+
+        return jsonify({'success': True, 'requests': data}), 200
+    except Exception as e:
+        print('Requests Error:', str(e))
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': 'Failed to load farmer requests', 'error': str(e)}), 500
+
+
+@farmer_bp.route('/accepted', methods=['GET'])
+def get_farmer_accepted_requests():
+    farmer = get_current_farmer()
+    if not farmer:
+        return jsonify({'success': False, 'error': 'Unauthorized'}), 401
+
+    try:
+        requests = SellRequest.query.filter_by(farmer_id=farmer.id, status='ACCEPTED').order_by(_desc(SellRequest.created_at)).all()
+        data = []
+        for req in requests:
+            data.append({
+                'id': req.id,
+                'date': req.preferred_date.strftime('%Y-%m-%d') if req.preferred_date else req.created_at.strftime('%Y-%m-%d'),
+                'variety': req.variety,
+                'quantity_tons': float(req.quantity_tons) if req.quantity_tons is not None else None,
+                'agreed_price': float(req.agreed_price) if req.agreed_price is not None else (float(req.price_at_request) if req.price_at_request is not None else None),
+                'market_name': req.broker.market_name if getattr(req.broker, 'market_name', None) else None,
+                'expected_delivery_date': req.expected_delivery_date.strftime('%Y-%m-%d') if req.expected_delivery_date else None,
+                'order_id': req.order_id
+            })
+
+        return jsonify({'success': True, 'requests': data}), 200
+    except Exception as e:
+        print('Accepted Requests Error:', str(e))
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': 'Failed to load accepted requests', 'error': str(e)}), 500
+
+
+@farmer_bp.route('/weighments', methods=['GET'])
+def get_farmer_weighments():
+    farmer = get_current_farmer()
+    if not farmer:
+        return jsonify({'success': False, 'error': 'Unauthorized'}), 401
+
+    try:
+        weighments = Weighment.query.filter_by(farmer_id=farmer.id).order_by(_desc(Weighment.weighment_date)).all()
+        data = []
+        for w in weighments:
+            request_obj = SellRequest.query.get(w.sell_request_id) if w.sell_request_id else None
+            transaction = Transaction.query.filter_by(request_id=w.sell_request_id).first() if w.sell_request_id else None
+            const_price = None
+            if request_obj:
+                const_price = float(request_obj.agreed_price) if request_obj.agreed_price is not None else (float(request_obj.price_at_request) if request_obj.price_at_request is not None else None)
+            elif w.final_price_per_kg is not None:
+                const_price = float(w.final_price_per_kg)
+
+            const_total = None
+            try:
+                const_total = float(transaction.total_cost) if transaction and transaction.total_cost is not None else (float(w.actual_weight_tons) * float(w.final_price_per_kg) * 1000 if w.actual_weight_tons is not None and w.final_price_per_kg is not None else None)
+            except Exception:
+                const_total = None
+
+            data.append({
+                'id': w.id,
+                'order_id': request_obj.order_id if request_obj and request_obj.order_id else w.order_id,
+                'order_date': request_obj.preferred_date.strftime('%Y-%m-%d') if request_obj and request_obj.preferred_date else (w.created_at.strftime('%Y-%m-%d') if w.created_at else None),
+                'variety': w.mango_variety,
+                'agreed_price': const_price,
+                'market_name': w.broker.market_name if getattr(w.broker, 'market_name', None) else None,
+                'weighment_date': w.weighment_date.strftime('%Y-%m-%d') if w.weighment_date else None,
+                'final_weight_tons': float(w.actual_weight_tons) if w.actual_weight_tons is not None else None,
+                'final_price_per_kg': float(w.final_price_per_kg) if w.final_price_per_kg is not None else None,
+                'commission': float(transaction.commission) if transaction and transaction.commission is not None else None,
+                'total_amount': const_total,
+                'payment_status': w.payment_status or (transaction.payment_status if transaction else 'PENDING')
+            })
+
+        return jsonify({'success': True, 'weighments': data}), 200
+    except Exception as e:
+        print('Weighments Error:', str(e))
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': 'Failed to load weighments', 'error': str(e)}), 500
+
+
+@farmer_bp.route('/payments', methods=['GET'])
+def get_farmer_payments():
+    farmer = get_current_farmer()
+    if not farmer:
+        return jsonify({'success': False, 'error': 'Unauthorized'}), 401
+
+    try:
+        payments = []
+
+        transactions = (
+            Transaction.query
+            .join(SellRequest, Transaction.request_id == SellRequest.id)
+            .filter(SellRequest.farmer_id == farmer.id)
+            .order_by(_desc(Transaction.transaction_date))
+            .all()
+        )
+
+        for tx in transactions:
+            request_obj = SellRequest.query.get(tx.request_id)
+            payments.append({
+                'transaction_id': tx.id,
+                'upi_transaction_id': tx.upi_transaction_id,
+                'payment_date': tx.transaction_date.strftime('%Y-%m-%d') if tx.transaction_date else None,
+                'total_amount_debited': float(tx.net_payable) if tx.net_payable is not None else None,
+                'market_name': request_obj.broker.market_name if request_obj and getattr(request_obj.broker, 'market_name', None) else None,
+                'order_id': request_obj.order_id if request_obj else None,
+                'variety': request_obj.variety if request_obj else None,
+                'payment_proof_url': f"/{tx.payment_proof}" if tx.payment_proof else None,
+                'payment_status': tx.payment_status,
+                'source': 'transaction'
+            })
+
+        weighments = (
+            Weighment.query
+            .filter(Weighment.farmer_id == farmer.id)
+            .filter(Weighment.payment_status.isnot(None))
+            .order_by(_desc(Weighment.created_at))
+            .all()
+        )
+
+        for w in weighments:
+            if not (w.upi_transaction_id or w.payment_proof):
+                continue
+            payments.append({
+                'transaction_id': f'w-{w.id}',
+                'upi_transaction_id': w.upi_transaction_id,
+                'payment_date': w.created_at.strftime('%Y-%m-%d') if w.created_at else None,
+                'total_amount_debited': (float(w.actual_weight_tons) * float(w.final_price_per_kg) * 1000) if w.actual_weight_tons is not None and w.final_price_per_kg is not None else None,
+                'market_name': w.broker.market_name if getattr(w.broker, 'market_name', None) else None,
+                'order_id': w.order_id,
+                'variety': w.mango_variety,
+                'payment_proof_url': f"/{w.payment_proof}" if w.payment_proof else None,
+                'payment_status': w.payment_status,
+                'source': 'weighment'
+            })
+
+        # Sort combined payments by payment date descending
+        payments.sort(key=lambda x: x.get('payment_date') or '', reverse=True)
+
+        return jsonify({'success': True, 'payments': payments}), 200
+    except Exception as e:
+        print('Payments Error:', str(e))
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': 'Failed to load payments', 'error': str(e)}), 500
 
 
 @farmer_bp.route('/bank', methods=['GET'])
@@ -3856,7 +4053,18 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
             pass
 
         # Create DB schema (in-memory or file-based depending on config)
-        db.create_all()
+        create_all_attempts = 3
+        for attempt in range(1, create_all_attempts + 1):
+            try:
+                db.create_all()
+                break
+            except OperationalError as oe:
+                error_text = str(oe).lower()
+                if 'being modified by concurrent ddl statement' in error_text and attempt < create_all_attempts:
+                    print(f'Warning: create_all DDL conflict detected, retrying ({attempt}/{create_all_attempts})...')
+                    time.sleep(1)
+                    continue
+                raise
 
         # Ensure new columns for SellRequest exist (idempotent, safe for SQLite)
         try:
@@ -3930,20 +4138,33 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
 
                 # Remove any existing non-unique index on order_id so we can create a unique one
                 try:
-                    conn.execute(text("DROP INDEX IF EXISTS ix_weighments_order_id"))
+                    if conn.engine.dialect.name.lower() in ('mysql', 'mariadb'):
+                        conn.execute(text("DROP INDEX ix_weighments_order_id ON weighments"))
+                    else:
+                        conn.execute(text("DROP INDEX IF EXISTS ix_weighments_order_id"))
                 except Exception:
                     pass
 
                 # Try to create unique indexes. If creation fails (likely due to remaining duplicates), log a clear warning but do not stop app startup
                 try:
-                    conn.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS ux_weighments_order_id ON weighments(order_id)"))
+                    if conn.engine.dialect.name.lower() in ('mysql', 'mariadb'):
+                        conn.execute(text("CREATE UNIQUE INDEX ux_weighments_order_id ON weighments(order_id)"))
+                    else:
+                        conn.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS ux_weighments_order_id ON weighments(order_id)"))
                 except Exception as e:
-                    print('Warning: Could not create unique index ux_weighments_order_id (duplicates may remain):', str(e))
+                    error_text = str(e).lower()
+                    if 'duplicate key name' not in error_text and 'already exists' not in error_text:
+                        print('Warning: Could not create unique index ux_weighments_order_id (duplicates may remain):', str(e))
 
                 try:
-                    conn.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS ux_farmer_orders_order_id ON farmer_orders(order_id)"))
+                    if conn.engine.dialect.name.lower() in ('mysql', 'mariadb'):
+                        conn.execute(text("CREATE UNIQUE INDEX ux_farmer_orders_order_id ON farmer_orders(order_id)"))
+                    else:
+                        conn.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS ux_farmer_orders_order_id ON farmer_orders(order_id)"))
                 except Exception as e:
-                    print('Warning: Could not create unique index ux_farmer_orders_order_id (duplicates may remain):', str(e))
+                    error_text = str(e).lower()
+                    if 'duplicate key name' not in error_text and 'already exists' not in error_text:
+                        print('Warning: Could not create unique index ux_farmer_orders_order_id (duplicates may remain):', str(e))
         except Exception as e:
             # Non-fatal; best effort
             print('Warning: Failed to ensure unique indexes for order_id:', str(e))
