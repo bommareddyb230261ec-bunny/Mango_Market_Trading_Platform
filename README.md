@@ -1,4 +1,4 @@
-# 🥭 Mango Market Platform
+# 🥭 Mango Market Trading Platform
 
 <div align="center">
 
