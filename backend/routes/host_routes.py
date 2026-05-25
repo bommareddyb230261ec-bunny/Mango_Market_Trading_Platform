@@ -520,3 +520,143 @@ def get_rejected_brokers():
             'success': False,
             'message': f'Failed to fetch rejected brokers: {str(e)}'
         }), 500
+
+
+@host_bp.route('/brokers/all', methods=['GET'])
+def get_all_brokers():
+    """
+    Get all brokers for statistics display
+    
+    Returns list of all brokers with their verification status
+    
+    Response:
+    [
+        {
+            "id": 12,
+            "broker_name": "Suraj",
+            "market_name": "Suraj Market & Co",
+            "phone": "9876543210",
+            "email": "suraj@email.com",
+            "location": "Vijayawada, Krishna, Andhra Pradesh",
+            "trade_license": "/uploads/trade_licenses/license12.pdf",
+            "verification_status": "PENDING",
+            "created_at": "2026-01-15T10:30:00",
+            "updated_at": "2026-01-15T10:30:00"
+        }
+    ]
+    """
+    try:
+        # Query all brokers
+        all_brokers = Broker.query.all()
+        
+        brokers_data = []
+        for broker in all_brokers:
+            user = User.query.get(broker.user_id)
+            place = Place.query.get(broker.place_id)
+            
+            if user and place:
+                location = f"{place.market_area}, {place.district}, {place.state}"
+                
+                brokers_data.append({
+                    'id': broker.id,
+                    'broker_name': user.name,
+                    'market_name': broker.market_name,
+                    'phone': user.phone,
+                    'email': user.email or 'N/A',
+                    'location': location,
+                    'trade_license': broker.trade_license,
+                    'verification_status': broker.verification_status,
+                    'created_at': broker.registration_date.isoformat() if broker.registration_date else None,
+                    'updated_at': broker.last_updated.isoformat() if hasattr(broker, 'last_updated') and broker.last_updated else None
+                })
+        
+        return jsonify(brokers_data), 200
+    
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'Failed to fetch all brokers: {str(e)}'
+        }), 500
+
+
+@host_bp.route('/payments/all', methods=['GET'])
+def get_all_payments():
+    """
+    Get all payments for statistics display
+    
+    Returns list of all transactions and weighments with their payment status
+    
+    Response:
+    [
+        {
+            "transaction_id": "123",
+            "order_id": "ORD-001",
+            "farmer_name": "John Doe",
+            "amount": 5000.00,
+            "upi_transaction_id": "UPI123456",
+            "payment_status": "APPROVED",
+            "payment_proof_url": "/uploads/payment_proofs/proof123.pdf",
+            "created_at": "2026-01-15T10:30:00",
+            "updated_at": "2026-01-15T10:30:00"
+        }
+    ]
+    """
+    try:
+        payments = []
+
+        # Get all transactions
+        transactions = Transaction.query.all()
+        for txn in transactions:
+            sell_request = txn.sell_request
+            farmer = None
+            user = None
+            if sell_request:
+                farmer = Farmer.query.get(sell_request.farmer_id)
+                if farmer:
+                    user = User.query.get(farmer.user_id)
+
+            payments.append({
+                'transaction_id': str(txn.id),
+                'type': 'transaction',
+                'order_id': sell_request.order_id if sell_request else 'N/A',
+                'farmer_name': user.name if user else (farmer.name if hasattr(farmer, 'name') else 'Farmer'),
+                'phone': user.phone if user else '-',
+                'amount': float(txn.net_payable or 0),
+                'payment_status': txn.payment_status,
+                'upi_transaction_id': txn.upi_transaction_id or '-',
+                'payment_proof_url': f"/{txn.payment_proof}" if txn.payment_proof else None,
+                'created_at': txn.created_at.isoformat() if txn.created_at else None,
+                'updated_at': txn.updated_at.isoformat() if txn.updated_at else None
+            })
+
+        # Get all weighments
+        weighments = Weighment.query.all()
+        for weighment in weighments:
+            farmer = None
+            user = None
+            if weighment.farmer_id:
+                farmer = Farmer.query.get(weighment.farmer_id)
+                if farmer:
+                    user = User.query.get(farmer.user_id)
+
+            amount = (weighment.actual_weight_tons or 0) * 1000 * (weighment.final_price_per_kg or 0)
+            payments.append({
+                'transaction_id': f'w-{weighment.id}',
+                'type': 'weighment',
+                'order_id': weighment.order_id or 'N/A',
+                'farmer_name': user.name if user else (weighment.farmer_name or 'Farmer'),
+                'phone': user.phone if user else '-',
+                'amount': float(amount),
+                'payment_status': weighment.payment_status,
+                'upi_transaction_id': weighment.upi_transaction_id or '-',
+                'payment_proof_url': f"/{weighment.payment_proof}" if weighment.payment_proof else None,
+                'created_at': weighment.created_at.isoformat() if weighment.created_at else None,
+                'updated_at': weighment.updated_at.isoformat() if weighment.updated_at else None
+            })
+
+        return jsonify(payments), 200
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'Failed to fetch all payments: {str(e)}'
+        }), 500

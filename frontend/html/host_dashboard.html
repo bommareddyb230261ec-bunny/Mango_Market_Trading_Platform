@@ -265,6 +265,265 @@
         .no-data small {
             color: #bbb;
         }
+
+        /* Statistics Modal */
+        .statistics-modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .statistics-modal.show {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .statistics-content {
+            background: white;
+            border-radius: 15px;
+            padding: 40px;
+            max-width: 1200px;
+            max-height: 90vh;
+            overflow-y: auto;
+            width: 95%;
+            position: relative;
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.3);
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .statistics-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .statistics-header h2 {
+            color: #333;
+            font-size: 28px;
+            margin: 0;
+        }
+
+        .close-statistics {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            font-size: 24px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .close-statistics:hover {
+            background: #c0392b;
+            transform: rotate(90deg);
+        }
+
+        .statistics-filters {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .statistics-filters input,
+        .statistics-filters select {
+            padding: 10px 15px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .statistics-filters button {
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .statistics-filters button:hover {
+            background: #764ba2;
+            transform: translateY(-2px);
+        }
+
+        .statistics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .stat-card.success {
+            background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+            box-shadow: 0 5px 15px rgba(39, 174, 96, 0.3);
+        }
+
+        .stat-card.success:hover {
+            box-shadow: 0 10px 25px rgba(39, 174, 96, 0.4);
+        }
+
+        .stat-card.warning {
+            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+            box-shadow: 0 5px 15px rgba(243, 156, 18, 0.3);
+        }
+
+        .stat-card.warning:hover {
+            box-shadow: 0 10px 25px rgba(243, 156, 18, 0.4);
+        }
+
+        .stat-card.danger {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            box-shadow: 0 5px 15px rgba(231, 76, 60, 0.3);
+        }
+
+        .stat-card.danger:hover {
+            box-shadow: 0 10px 25px rgba(231, 76, 60, 0.4);
+        }
+
+        .stat-card.info {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
+        }
+
+        .stat-card.info:hover {
+            box-shadow: 0 10px 25px rgba(52, 152, 219, 0.4);
+        }
+
+        .stat-number {
+            font-size: 36px;
+            font-weight: 700;
+            margin: 10px 0;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            opacity: 0.9;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .stat-percentage {
+            font-size: 12px;
+            margin-top: 8px;
+            opacity: 0.8;
+        }
+
+        .statistics-section {
+            margin-bottom: 40px;
+        }
+
+        .statistics-section h3 {
+            color: #333;
+            font-size: 20px;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-bottom: 20px;
+        }
+
+        .details-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        .details-table th {
+            background: #f8f9fa;
+            color: #333;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 2px solid #ddd;
+        }
+
+        .details-table td {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .details-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .statistics-content {
+                padding: 20px;
+                max-height: 95vh;
+            }
+
+            .statistics-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .statistics-header h2 {
+                font-size: 22px;
+            }
+
+            .stat-number {
+                font-size: 28px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -280,7 +539,7 @@
     <!-- Controls -->
     <div class="dashboard-controls">
         <button onclick="refreshTable()">🔄 Refresh</button>
-        <button onclick="alert('Feature coming soon')">📊 View Statistics</button>
+        <button onclick="openStatisticsModal()">📊 View Statistics</button>
     </div>
 
     <!-- Table Container -->
@@ -344,6 +603,160 @@
                 </tr>
             </tbody>
         </table>
+    </div>
+
+    <!-- Statistics Modal -->
+    <div id="statisticsModal" class="statistics-modal">
+        <div class="statistics-content">
+            <div class="statistics-header">
+                <h2>📊 Platform Statistics</h2>
+                <button class="close-statistics" onclick="closeStatisticsModal()">&times;</button>
+            </div>
+
+            <!-- Filters -->
+            <div class="statistics-filters">
+                <input type="date" id="startDate" placeholder="Start Date">
+                <input type="date" id="endDate" placeholder="End Date">
+                <select id="marketFilter">
+                    <option value="">All Markets</option>
+                </select>
+                <button onclick="applyStatisticsFilters()">Apply Filters</button>
+                <button onclick="resetStatisticsFilters()" style="background: #95a5a6;">Reset</button>
+            </div>
+
+            <!-- Loading State -->
+            <div id="statisticsLoading" style="text-align: center; padding: 40px;">
+                <div class="loading-spinner"></div>
+                <p style="margin-top: 15px; color: #667eea;">Loading statistics...</p>
+            </div>
+
+            <!-- Statistics Content -->
+            <div id="statisticsContainer" style="display: none;">
+
+                <!-- Broker Verification Statistics -->
+                <div class="statistics-section">
+                    <h3>👥 Broker Verification Overview</h3>
+                    <div class="statistics-grid">
+                        <div class="stat-card">
+                            <div class="stat-label">Total Brokers</div>
+                            <div class="stat-number" id="totalBrokersCount">0</div>
+                        </div>
+                        <div class="stat-card warning">
+                            <div class="stat-label">Pending</div>
+                            <div class="stat-number" id="pendingBrokersCount">0</div>
+                        </div>
+                        <div class="stat-card success">
+                            <div class="stat-label">Approved</div>
+                            <div class="stat-number" id="approvedBrokersCount">0</div>
+                        </div>
+                        <div class="stat-card danger">
+                            <div class="stat-label">Rejected</div>
+                            <div class="stat-number" id="rejectedBrokersCount">0</div>
+                        </div>
+                    </div>
+                    <div class="statistics-grid">
+                        <div class="stat-card info">
+                            <div class="stat-label">Approval Rate</div>
+                            <div class="stat-number" id="brokerApprovalRate">0%</div>
+                        </div>
+                        <div class="stat-card" style="background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);">
+                            <div class="stat-label">Avg Approval Time</div>
+                            <div class="stat-number" id="avgApprovalTime">-</div>
+                            <div class="stat-percentage">days</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Payment Verification Statistics -->
+                <div class="statistics-section">
+                    <h3>💳 Payment Verification Overview</h3>
+                    <div class="statistics-grid">
+                        <div class="stat-card">
+                            <div class="stat-label">Total Transactions</div>
+                            <div class="stat-number" id="totalPaymentsCount">0</div>
+                        </div>
+                        <div class="stat-card warning">
+                            <div class="stat-label">Pending</div>
+                            <div class="stat-number" id="pendingPaymentsCount">0</div>
+                        </div>
+                        <div class="stat-card success">
+                            <div class="stat-label">Approved</div>
+                            <div class="stat-number" id="approvedPaymentsCount">0</div>
+                        </div>
+                        <div class="stat-card danger">
+                            <div class="stat-label">Rejected</div>
+                            <div class="stat-number" id="rejectedPaymentsCount">0</div>
+                        </div>
+                    </div>
+                    <div class="statistics-grid">
+                        <div class="stat-card info">
+                            <div class="stat-label">Total Processed</div>
+                            <div class="stat-number" id="totalAmountProcessed">₹0</div>
+                        </div>
+                        <div class="stat-card" style="background: linear-gradient(135deg, #16a085 0%, #138d75 100%);">
+                            <div class="stat-label">Payment Success Rate</div>
+                            <div class="stat-number" id="paymentSuccessRate">0%</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Brokers by Market -->
+                <div class="statistics-section">
+                    <h3>🏪 Brokers by Market</h3>
+                    <table class="details-table">
+                        <thead>
+                            <tr>
+                                <th>Market Name</th>
+                                <th>Total</th>
+                                <th>Approved</th>
+                                <th>Pending</th>
+                                <th>Rejected</th>
+                            </tr>
+                        </thead>
+                        <tbody id="brokersByMarketBody">
+                            <tr><td colspan="5" style="text-align: center;">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Brokers by Location -->
+                <div class="statistics-section">
+                    <h3>📍 Brokers by Location</h3>
+                    <table class="details-table">
+                        <thead>
+                            <tr>
+                                <th>Location</th>
+                                <th>Total</th>
+                                <th>Approved</th>
+                                <th>Pending</th>
+                            </tr>
+                        </thead>
+                        <tbody id="brokersByLocationBody">
+                            <tr><td colspan="4" style="text-align: center;">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Recent Activity -->
+                <div class="statistics-section">
+                    <h3>📅 Recent Activity (Last 7 Days)</h3>
+                    <table class="details-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Brokers Approved</th>
+                                <th>Payments Approved</th>
+                                <th>Total Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recentActivityBody">
+                            <tr><td colspan="4" style="text-align: center;">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+        </div>
     </div>
 
     <!-- Scripts -->
@@ -741,6 +1154,305 @@
             console.log('[Host Dashboard] Refreshing table...');
             loadPendingBrokers();
             loadPendingPayments();
+        }
+
+        // ============ STATISTICS FUNCTIONS ============
+
+        function openStatisticsModal() {
+            console.log('[Host Dashboard] Opening statistics modal...');
+            const modal = document.getElementById('statisticsModal');
+            modal.classList.add('show');
+            loadStatistics();
+        }
+
+        function closeStatisticsModal() {
+            console.log('[Host Dashboard] Closing statistics modal...');
+            const modal = document.getElementById('statisticsModal');
+            modal.classList.remove('show');
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('statisticsModal');
+            if (event.target === modal) {
+                closeStatisticsModal();
+            }
+        }
+
+        async function loadStatistics() {
+            const loading = document.getElementById('statisticsLoading');
+            const container = document.getElementById('statisticsContainer');
+            
+            loading.style.display = 'block';
+            container.style.display = 'none';
+
+            try {
+                console.log('[Host Dashboard] Fetching statistics...');
+                
+                // Fetch broker and payment data in parallel
+                const [brokersResponse, paymentsResponse] = await Promise.all([
+                    fetch(`${API_BASE}/api/host/brokers/all`, {
+                        method: 'GET',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include'
+                    }),
+                    fetch(`${API_BASE}/api/host/payments/all`, {
+                        method: 'GET',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include'
+                    })
+                ]);
+
+                let brokers = [];
+                let payments = [];
+
+                if (brokersResponse.ok) {
+                    const brokersData = await brokersResponse.json();
+                    brokers = Array.isArray(brokersData) ? brokersData : [];
+                } else {
+                    console.warn('[Host Dashboard] Failed to fetch brokers:', brokersResponse.status);
+                }
+
+                if (paymentsResponse.ok) {
+                    const paymentsData = await paymentsResponse.json();
+                    payments = Array.isArray(paymentsData) ? paymentsData : [];
+                } else {
+                    console.warn('[Host Dashboard] Failed to fetch payments:', paymentsResponse.status);
+                }
+
+                // Calculate statistics
+                calculateAndDisplayStatistics(brokers, payments);
+
+                loading.style.display = 'none';
+                container.style.display = 'block';
+            } catch (error) {
+                console.error('[Host Dashboard] Error loading statistics:', error);
+                loading.innerHTML = `<p style="color: red;">Error loading statistics: ${error.message}</p>`;
+            }
+        }
+
+        function calculateAndDisplayStatistics(brokers, payments) {
+            console.log('[Host Dashboard] Calculating statistics...');
+            
+            // Ensure arrays
+            const brokersList = Array.isArray(brokers) ? brokers : [];
+            const paymentsList = Array.isArray(payments) ? payments : [];
+
+            // ============ BROKER STATISTICS ============
+            const totalBrokers = brokersList.length;
+            const approvedBrokers = brokersList.filter(b => b.verification_status === 'APPROVED').length;
+            const rejectedBrokers = brokersList.filter(b => b.verification_status === 'REJECTED').length;
+            const pendingBrokers = brokersList.filter(b => b.verification_status === 'PENDING').length;
+            const brokerApprovalRate = totalBrokers > 0 ? Math.round((approvedBrokers / totalBrokers) * 100) : 0;
+
+            // Update broker cards
+            document.getElementById('totalBrokersCount').textContent = totalBrokers;
+            document.getElementById('pendingBrokersCount').textContent = pendingBrokers;
+            document.getElementById('approvedBrokersCount').textContent = approvedBrokers;
+            document.getElementById('rejectedBrokersCount').textContent = rejectedBrokers;
+            document.getElementById('brokerApprovalRate').textContent = brokerApprovalRate + '%';
+
+            // Calculate average approval time (days)
+            const approvedBrokersWithDates = brokersList.filter(b => 
+                b.verification_status === 'APPROVED' && b.created_at && b.updated_at
+            );
+            let avgApprovalTime = '-';
+            if (approvedBrokersWithDates.length > 0) {
+                try {
+                    const totalDays = approvedBrokersWithDates.reduce((sum, broker) => {
+                        const created = new Date(broker.created_at);
+                        const updated = new Date(broker.updated_at);
+                        const days = Math.floor((updated - created) / (1000 * 60 * 60 * 24));
+                        return sum + (isNaN(days) ? 0 : days);
+                    }, 0);
+                    avgApprovalTime = Math.round(totalDays / approvedBrokersWithDates.length);
+                } catch (e) {
+                    console.warn('[Host Dashboard] Error calculating average approval time:', e);
+                    avgApprovalTime = '-';
+                }
+            }
+            document.getElementById('avgApprovalTime').textContent = avgApprovalTime;
+
+            // ============ PAYMENT STATISTICS ============
+            const totalPayments = paymentsList.length;
+            const approvedPayments = paymentsList.filter(p => p.payment_status === 'APPROVED').length;
+            const rejectedPayments = paymentsList.filter(p => p.payment_status === 'REJECTED').length;
+            const pendingPayments = paymentsList.filter(p => p.payment_status === 'PENDING').length;
+            const paymentSuccessRate = totalPayments > 0 ? Math.round((approvedPayments / totalPayments) * 100) : 0;
+
+            // Calculate total amount processed
+            const totalAmountProcessed = paymentsList
+                .filter(p => p.payment_status === 'APPROVED')
+                .reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
+
+            // Update payment cards
+            document.getElementById('totalPaymentsCount').textContent = totalPayments;
+            document.getElementById('pendingPaymentsCount').textContent = pendingPayments;
+            document.getElementById('approvedPaymentsCount').textContent = approvedPayments;
+            document.getElementById('rejectedPaymentsCount').textContent = rejectedPayments;
+            document.getElementById('paymentSuccessRate').textContent = paymentSuccessRate + '%';
+            document.getElementById('totalAmountProcessed').textContent = '₹' + totalAmountProcessed.toFixed(2);
+
+            // ============ BROKERS BY MARKET ============
+            displayBrokersByMarket(brokersList);
+
+            // ============ BROKERS BY LOCATION ============
+            displayBrokersByLocation(brokersList);
+
+            // ============ RECENT ACTIVITY ============
+            displayRecentActivity(brokersList, paymentsList);
+
+            // Populate market filter
+            populateMarketFilter(brokersList);
+        }
+
+        function displayBrokersByMarket(brokers) {
+            const tbody = document.getElementById('brokersByMarketBody');
+            const marketMap = {};
+
+            brokers.forEach(broker => {
+                const market = broker.market_name || 'Unknown';
+                if (!marketMap[market]) {
+                    marketMap[market] = { total: 0, approved: 0, pending: 0, rejected: 0 };
+                }
+                marketMap[market].total++;
+                if (broker.verification_status === 'APPROVED') marketMap[market].approved++;
+                else if (broker.verification_status === 'PENDING') marketMap[market].pending++;
+                else if (broker.verification_status === 'REJECTED') marketMap[market].rejected++;
+            });
+
+            if (Object.keys(marketMap).length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">No data available</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = Object.entries(marketMap).map(([market, stats]) => `
+                <tr>
+                    <td><strong>${market}</strong></td>
+                    <td>${stats.total}</td>
+                    <td><span style="color: #27ae60; font-weight: 600;">${stats.approved}</span></td>
+                    <td><span style="color: #f39c12; font-weight: 600;">${stats.pending}</span></td>
+                    <td><span style="color: #e74c3c; font-weight: 600;">${stats.rejected}</span></td>
+                </tr>
+            `).join('');
+        }
+
+        function displayBrokersByLocation(brokers) {
+            const tbody = document.getElementById('brokersByLocationBody');
+            const locationMap = {};
+
+            brokers.forEach(broker => {
+                const location = broker.location || 'Unknown';
+                if (!locationMap[location]) {
+                    locationMap[location] = { total: 0, approved: 0, pending: 0 };
+                }
+                locationMap[location].total++;
+                if (broker.verification_status === 'APPROVED') locationMap[location].approved++;
+                else if (broker.verification_status === 'PENDING') locationMap[location].pending++;
+            });
+
+            if (Object.keys(locationMap).length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;">No data available</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = Object.entries(locationMap)
+                .sort((a, b) => b[1].total - a[1].total)
+                .slice(0, 10)
+                .map(([location, stats]) => `
+                <tr>
+                    <td><strong>${location}</strong></td>
+                    <td>${stats.total}</td>
+                    <td><span style="color: #27ae60; font-weight: 600;">${stats.approved}</span></td>
+                    <td><span style="color: #f39c12; font-weight: 600;">${stats.pending}</span></td>
+                </tr>
+            `).join('');
+        }
+
+        function displayRecentActivity(brokers, payments) {
+            const tbody = document.getElementById('recentActivityBody');
+            const activityMap = {};
+
+            // Get last 7 days
+            for (let i = 0; i < 7; i++) {
+                const date = new Date();
+                date.setDate(date.getDate() - i);
+                const dateStr = date.toISOString().split('T')[0];
+                activityMap[dateStr] = { brokers: 0, payments: 0, amount: 0 };
+            }
+
+            // Count brokers approved by date
+            brokers.forEach(broker => {
+                try {
+                    if (broker.verification_status === 'APPROVED' && broker.updated_at) {
+                        const dateStr = broker.updated_at.split('T')[0];
+                        if (activityMap[dateStr]) {
+                            activityMap[dateStr].brokers++;
+                        }
+                    }
+                } catch (e) {
+                    console.warn('[Host Dashboard] Error processing broker date:', e);
+                }
+            });
+
+            // Count payments approved by date
+            payments.forEach(payment => {
+                try {
+                    if (payment.payment_status === 'APPROVED' && payment.updated_at) {
+                        const dateStr = payment.updated_at.split('T')[0];
+                        if (activityMap[dateStr]) {
+                            activityMap[dateStr].payments++;
+                            activityMap[dateStr].amount += parseFloat(payment.amount) || 0;
+                        }
+                    }
+                } catch (e) {
+                    console.warn('[Host Dashboard] Error processing payment date:', e);
+                }
+            });
+
+            tbody.innerHTML = Object.entries(activityMap)
+                .sort((a, b) => new Date(b[0]) - new Date(a[0]))
+                .map(([date, data]) => {
+                    try {
+                        const dateObj = new Date(date + 'T00:00:00Z');
+                        return `
+                            <tr>
+                                <td><strong>${dateObj.toLocaleDateString()}</strong></td>
+                                <td>${data.brokers}</td>
+                                <td>${data.payments}</td>
+                                <td>₹${data.amount.toFixed(2)}</td>
+                            </tr>
+                        `;
+                    } catch (e) {
+                        console.warn('[Host Dashboard] Error formatting date:', e);
+                        return '';
+                    }
+                }).join('');
+        }
+
+        function populateMarketFilter(brokers) {
+            const filter = document.getElementById('marketFilter');
+            const markets = [...new Set(brokers.map(b => b.market_name).filter(m => m))];
+            
+            markets.forEach(market => {
+                const option = document.createElement('option');
+                option.value = market;
+                option.textContent = market;
+                filter.appendChild(option);
+            });
+        }
+
+        function applyStatisticsFilters() {
+            console.log('[Host Dashboard] Applying statistics filters...');
+            alert('Filter functionality coming soon. This will allow filtering by date range and market.');
+        }
+
+        function resetStatisticsFilters() {
+            console.log('[Host Dashboard] Resetting statistics filters...');
+            document.getElementById('startDate').value = '';
+            document.getElementById('endDate').value = '';
+            document.getElementById('marketFilter').value = '';
+            loadStatistics();
         }
     </script>
 </body>
