@@ -1,0 +1,1040 @@
+/* =========================================
+   BROKER DASHBOARD - MODERN BUSINESS UI
+   Theme: Professional, Clean, Business-Focused
+   ========================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+:root {
+    /* Brand Colors - Broker Orange & Professional */
+    --primary-orange: #e65100;
+    --primary-orange-dark: #bf360c;
+    --primary-orange-light: #ff8a50;
+    --secondary-orange: #ff9800;
+    --light-orange: #fff3e0;
+    --very-light-orange: #fffbf5;
+    
+    /* Accent Colors */
+    --accent-green: #4caf50;
+    --accent-red: #d32f2f;
+    --accent-blue: #1976d2;
+    --accent-yellow: #fbc02d;
+    
+    /* Neutral Colors */
+    --text-dark: #1a1a1a;
+    --text-medium: #424242;
+    --text-light: #757575;
+    --bg-body: #fafafa;
+    --white: #ffffff;
+    --light-gray: #f5f5f5;
+    
+    /* Borders & Shadows */
+    --border-color: #e0e0e0;
+    --border-light: #f0f0f0;
+    --card-shadow: 0 2px 8px rgba(230, 81, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.06);
+    --card-shadow-lg: 0 8px 24px rgba(230, 81, 0, 0.12);
+    --hover-shadow: 0 12px 28px rgba(230, 81, 0, 0.15), 0 6px 12px rgba(0, 0, 0, 0.08);
+    --focus-shadow: 0 0 0 4px rgba(230, 81, 0, 0.15);
+    
+    /* Spacing & Radius */
+    --radius-sm: 6px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --spacing-xs: 4px;
+    --spacing-sm: 8px;
+    --spacing-md: 16px;
+    --spacing-lg: 24px;
+    --spacing-xl: 32px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: var(--bg-body);
+    color: var(--text-dark);
+    line-height: 1.6;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* ================= HEADER ================= */
+header {
+    background: var(--white);
+    border-bottom: 2px solid var(--border-light);
+    padding: 1.2rem 0;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: var(--card-shadow);
+    transition: box-shadow 0.3s ease;
+}
+
+header:hover {
+    box-shadow: var(--card-shadow-lg);
+}
+
+header > div {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 var(--spacing-lg);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--spacing-lg);
+}
+
+header > div > div {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+}
+
+header h1 {
+    font-size: 1.6rem;
+    color: var(--primary-orange);
+    font-weight: 800;
+    letter-spacing: -0.8px;
+}
+
+header h1 span {
+    font-size: 0.75rem;
+    background: linear-gradient(135deg, var(--light-orange), #ffe0b2);
+    color: var(--primary-orange-dark);
+    padding: 6px 12px;
+    border-radius: var(--radius-sm);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: var(--card-shadow);
+}
+
+/* Navigation */
+header nav ul {
+    list-style: none;
+    display: flex;
+    gap: var(--spacing-lg);
+}
+
+header nav a {
+    color: var(--text-dark);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.95rem;
+    padding: 0.6rem 1.2rem;
+    border-radius: var(--radius-sm);
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+header nav a.btn-sell-requests {
+    background: linear-gradient(135deg, var(--primary-orange), var(--secondary-orange));
+    color: white;
+    font-weight: 700;
+    box-shadow: var(--card-shadow);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: 0.85rem;
+}
+
+header nav a.btn-sell-requests:hover {
+    color: white;
+    background: linear-gradient(135deg, var(--primary-orange-dark), var(--primary-orange));
+    transform: translateY(-2px);
+    box-shadow: var(--hover-shadow);
+}
+
+header nav a.btn-transactions {
+    background: linear-gradient(135deg, var(--accent-blue), #2196f3);
+    color: white;
+    font-weight: 700;
+    box-shadow: var(--card-shadow);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: 0.85rem;
+}
+
+header nav a.btn-transactions:hover {
+    color: white;
+    background: linear-gradient(135deg, #1565c0, var(--accent-blue));
+    transform: translateY(-2px);
+    box-shadow: var(--hover-shadow);
+}
+
+header nav a::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background: var(--primary-orange);
+    transition: width 0.3s ease;
+}
+
+header nav a.btn-sell-requests::after {
+    display: none;
+}
+
+header nav a:hover {
+    color: var(--primary-orange);
+    background-color: var(--light-orange);
+}
+
+header nav a:hover::after {
+    width: 100%;
+}
+
+/* ================= MAIN LAYOUT ================= */
+/* UI ENHANCEMENT: Expanded main max-width to provide more horizontal space for key sections */
+main {
+    max-width: 1400px; /* increased from 1200px */
+    margin: 0 auto;
+    padding: var(--spacing-xl) var(--spacing-lg);
+    flex: 1;
+    width: 100%;
+} 
+
+/* ================= SECTIONS ================= */
+section {
+    background: var(--white);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-xl);
+    margin-bottom: var(--spacing-xl);
+    box-shadow: var(--card-shadow);
+    border: 1px solid var(--border-light);
+    transition: all 0.3s ease;
+}
+
+section:hover {
+    box-shadow: var(--card-shadow-lg);
+}
+
+section h2 {
+    font-size: 1.5rem;
+    color: var(--primary-orange);
+    font-weight: 800;
+    margin-bottom: var(--spacing-lg);
+    position: relative;
+    padding-bottom: var(--spacing-md);
+    border-bottom: 3px solid var(--primary-orange);
+    display: inline-block;
+}
+
+section p {
+    color: var(--text-medium);
+    font-size: 0.95rem;
+    line-height: 1.7;
+}
+
+/* ================= PRICE MANAGEMENT SECTION ================= */
+.price-management {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-xl);
+    align-items: start;
+}
+
+/* UI ENHANCEMENT: Expanded Current Buying Prices container */
+.price-management-section .section-wrapper {
+    max-width: 1400px; /* allow more horizontal room for the section */
+    margin: 0 auto;
+    padding: calc(var(--spacing-xl) + 8px); /* slightly larger padding for airiness */
+    box-sizing: border-box;
+}
+
+/* Make the Current Buying Prices card span full width of the two-column grid and provide more internal padding */
+.current-prices-card {
+    grid-column: 1 / -1; /* span both columns to create a wide, prominent box */
+    width: 100%;
+    margin: 0 auto;
+    padding: calc(var(--spacing-lg) + 4px);
+    box-sizing: border-box;
+}
+
+/* Enforce 3/2/1 responsive grid inside the Current Buying Prices container so cards fill rows */
+#marketPricesContainer, .market-prices {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr); /* Desktop: 3 equal columns */
+    gap: 24px; /* consistent spacing between cards */
+    align-items: stretch; /* equal height cards */
+}
+
+@media (max-width: 1023px) {
+    #marketPricesContainer, .market-prices {
+        grid-template-columns: repeat(2, 1fr); /* Tablet: 2 columns */
+    }
+}
+
+@media (max-width: 767px) {
+    #marketPricesContainer, .market-prices {
+        grid-template-columns: repeat(1, 1fr); /* Mobile: 1 column */
+    }
+}
+
+.market-info {
+    background: linear-gradient(135deg, var(--light-orange), #ffe0b2);
+    padding: var(--spacing-lg);
+    border-radius: var(--radius-lg);
+    border-left: 5px solid var(--primary-orange);
+}
+
+.market-info h3 {
+    font-size: 1.3rem;
+    color: var(--primary-orange-dark);
+    margin-bottom: var(--spacing-sm);
+    font-weight: 700;
+}
+
+.market-info p {
+    color: var(--text-medium);
+    font-size: 0.95rem;
+}
+
+.price-form {
+    background: var(--white);
+    padding: var(--spacing-lg);
+    border: 2px solid var(--border-light);
+    border-radius: var(--radius-lg);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+}
+
+/* ===== Market Price Card: variety header + delete button ===== */
+.variety-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.variety-header .variety {
+    flex: 1 1 auto;
+    font-weight: 700;
+    color: #333;
+}
+
+.btn-delete-variety {
+    background: transparent;
+    border: none;
+    color: var(--accent-red);
+    font-size: 1.05rem;
+    line-height: 1;
+    padding: 6px 8px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.18s ease, transform 0.12s ease;
+}
+
+.btn-delete-variety:hover {
+    background: rgba(220, 38, 38, 0.08);
+    transform: translateY(-1px);
+}
+
+.btn-delete-variety:active {
+    transform: translateY(0);
+}
+
+/* ================= FORM STYLES ================= */
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.form-group label {
+    font-weight: 600;
+    color: var(--text-dark);
+    font-size: 0.95rem;
+    text-transform: capitalize;
+    letter-spacing: 0.2px;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    padding: 12px 16px;
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-md);
+    font-size: 1rem;
+    font-family: inherit;
+    transition: all 0.3s ease;
+    background-color: var(--white);
+    color: var(--text-dark);
+}
+
+.form-group input::placeholder,
+.form-group textarea::placeholder {
+    color: var(--text-light);
+}
+
+.form-group input:hover,
+.form-group select:hover,
+.form-group textarea:hover {
+    border-color: var(--secondary-orange);
+    background-color: var(--light-gray);
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: var(--primary-orange);
+    box-shadow: var(--focus-shadow);
+    background-color: var(--white);
+}
+
+/* ================= FORM ERRORS ================= */
+.field-error-inline {
+    color: #dc2626;
+    font-size: 0.825rem;
+    margin-top: 6px;
+    margin-bottom: 12px;
+    font-weight: 500;
+    display: block;
+    animation: slideDown 0.2s ease-out;
+}
+
+.field-error-inline::before {
+    content: '⚠ ';
+    font-weight: bold;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ================= BUTTONS ================= */
+button {
+    padding: 12px 32px;
+    border: none;
+    border-radius: var(--radius-md);
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.btn-primary {
+    background-color: var(--primary-orange);
+    color: var(--white);
+    box-shadow: 0 4px 12px rgba(230, 81, 0, 0.3);
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-orange-dark);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(230, 81, 0, 0.4);
+}
+
+.btn-primary:active {
+    transform: translateY(-1px);
+}
+
+.btn-secondary {
+    background-color: var(--white);
+    color: var(--primary-orange);
+    border: 2px solid var(--primary-orange);
+}
+
+.btn-secondary:hover {
+    background-color: var(--light-orange);
+    box-shadow: 0 4px 12px rgba(230, 81, 0, 0.2);
+}
+
+.btn-success {
+    background-color: var(--accent-green);
+    color: var(--white);
+}
+
+.btn-success:hover {
+    background-color: #45a049;
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+}
+
+.btn-danger {
+    background-color: var(--accent-red);
+    color: var(--white);
+}
+
+.btn-danger:hover {
+    background-color: #c62828;
+    box-shadow: 0 4px 12px rgba(211, 47, 47, 0.3);
+}
+
+.btn-warning {
+    background-color: var(--accent-yellow);
+    color: var(--text-dark);
+}
+
+.btn-warning:hover {
+    background-color: #faa500;
+    box-shadow: 0 4px 12px rgba(251, 192, 45, 0.3);
+}
+
+/* ================= TABLES ================= */
+table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    background: var(--white);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: var(--card-shadow);
+    border: 1px solid var(--border-light);
+}
+
+table thead {
+    background: linear-gradient(135deg, #f5f5f5, #fafafa);
+}
+
+table th {
+    background-color: #f5f5f5;
+    color: var(--text-dark);
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    padding: 18px var(--spacing-md);
+    border-bottom: 2px solid var(--border-color);
+    text-align: left;
+    letter-spacing: 0.4px;
+}
+
+table td {
+    padding: 16px var(--spacing-md);
+    border-bottom: 1px solid var(--border-light);
+    font-size: 0.95rem;
+    color: var(--text-medium);
+    transition: background-color 0.2s ease;
+}
+
+table tbody tr:hover {
+    background-color: var(--light-gray);
+    transition: background-color 0.2s ease;
+}
+
+table tbody tr:hover td {
+    color: var(--primary-orange);
+}
+
+table tr:last-child td {
+    border-bottom: none;
+}
+
+/* ================= STATUS BADGES ================= */
+.status-badge {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    transition: all 0.3s ease;
+}
+
+.status-badge.pending {
+    background-color: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeaa7;
+}
+
+.status-badge.pending:hover {
+    background-color: #ffe5a7;
+    color: #5a4a02;
+}
+
+.status-badge.accepted {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.status-badge.accepted:hover {
+    background-color: #c3e6cb;
+    color: #0c5620;
+}
+
+.status-badge.rejected {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.status-badge.rejected:hover {
+    background-color: #f5c6cb;
+    color: #491217;
+}
+
+.status-badge.completed {
+    background-color: #d1ecf1;
+    color: #0c5460;
+    border: 1px solid #bee5eb;
+}
+
+.status-badge.completed:hover {
+    background-color: #bee5eb;
+    color: #04373b;
+}
+
+/* ================= ACTION BUTTONS IN TABLE ================= */
+.action-buttons {
+    display: flex;
+    gap: var(--spacing-sm);
+}
+
+.action-buttons button {
+    padding: 8px 16px;
+    font-size: 0.85rem;
+    border-radius: var(--radius-sm);
+}
+
+/* ================= PRICE INFO CARD ================= */
+.price-info-card {
+    background: linear-gradient(135deg, var(--primary-orange), var(--primary-orange-dark));
+    color: var(--white);
+    padding: var(--spacing-lg);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--card-shadow-lg);
+    margin-top: var(--spacing-md);
+}
+
+.price-info-card p {
+    color: rgba(255, 255, 255, 0.9);
+    margin-bottom: var(--spacing-sm);
+}
+
+.price-info-card strong {
+    font-weight: 700;
+    color: var(--white);
+    font-size: 1.1rem;
+}
+
+/* ================= LINKS ================= */
+a {
+    color: var(--primary-orange);
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    padding: 8px 16px;
+    display: inline-block;
+    border-radius: var(--radius-sm);
+}
+
+a:hover {
+    color: var(--white);
+    background-color: var(--primary-orange);
+    text-decoration: none;
+}
+
+/* ================= FOOTER ================= */
+footer {
+    background-color: var(--white);
+    color: var(--text-light);
+    padding: var(--spacing-xl) 0;
+    text-align: center;
+    border-top: 2px solid var(--border-light);
+    margin-top: auto;
+    font-size: 0.9rem;
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.03);
+}
+
+footer p {
+    margin-bottom: var(--spacing-sm);
+    font-weight: 500;
+}
+
+footer a {
+    color: var(--primary-orange);
+    transition: color 0.3s ease;
+    padding: 0;
+    display: inline;
+}
+
+footer a:hover {
+    color: var(--primary-orange-dark);
+    background-color: transparent;
+}
+
+/* ================= UTILITY CLASSES ================= */
+.text-center { text-align: center; }
+.text-right { text-align: right; }
+.text-left { text-align: left; }
+
+.mt-1 { margin-top: var(--spacing-sm); }
+.mt-2 { margin-top: var(--spacing-md); }
+.mt-3 { margin-top: var(--spacing-lg); }
+.mt-4 { margin-top: var(--spacing-xl); }
+
+.mb-1 { margin-bottom: var(--spacing-sm); }
+.mb-2 { margin-bottom: var(--spacing-md); }
+.mb-3 { margin-bottom: var(--spacing-lg); }
+.mb-4 { margin-bottom: var(--spacing-xl); }
+
+.p-1 { padding: var(--spacing-sm); }
+.p-2 { padding: var(--spacing-md); }
+.p-3 { padding: var(--spacing-lg); }
+.p-4 { padding: var(--spacing-xl); }
+
+.text-primary { color: var(--primary-orange); }
+.text-secondary { color: var(--secondary-orange); }
+.text-danger { color: var(--accent-red); }
+.text-success { color: var(--accent-green); }
+.text-warning { color: var(--accent-yellow); }
+
+.bg-light { background-color: var(--light-orange); }
+.bg-white { background-color: var(--white); }
+.bg-gray { background-color: var(--light-gray); }
+
+.shadow { box-shadow: var(--card-shadow); }
+.shadow-lg { box-shadow: var(--card-shadow-lg); }
+.shadow-hover:hover { box-shadow: var(--hover-shadow); }
+
+.rounded { border-radius: var(--radius-md); }
+.rounded-lg { border-radius: var(--radius-lg); }
+
+/* ================= RESPONSIVE DESIGN ================= */
+@media (max-width: 768px) {
+    :root {
+        --spacing-lg: 16px;
+        --spacing-xl: 24px;
+    }
+
+    header > div {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--spacing-md);
+    }
+
+    header nav ul {
+        flex-direction: column;
+        width: 100%;
+        gap: var(--spacing-sm);
+    }
+
+    header nav a {
+        display: block;
+        width: 100%;
+        text-align: center;
+    }
+
+    main {
+        padding: var(--spacing-lg) var(--spacing-md);
+    }
+
+    section {
+        padding: var(--spacing-lg) var(--spacing-md);
+        margin-bottom: var(--spacing-lg);
+    }
+
+    .price-management {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-lg);
+    }
+
+    table {
+        display: block;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    table thead {
+        display: none;
+    }
+
+    table tr {
+        display: block;
+        margin-bottom: var(--spacing-md);
+        background: var(--white);
+        border: 1px solid var(--border-light);
+        border-radius: var(--radius-md);
+        box-shadow: var(--card-shadow);
+    }
+
+    table td {
+        display: block;
+        text-align: right;
+        padding: var(--spacing-md);
+        border: none;
+    }
+
+    table td::before {
+        content: attr(data-label);
+        float: left;
+        font-weight: 700;
+        color: var(--text-dark);
+        text-transform: uppercase;
+        font-size: 0.8rem;
+        letter-spacing: 0.3px;
+    }
+
+    button {
+        width: 100%;
+        padding: 12px 16px;
+    }
+
+    header h1 {
+        font-size: 1.3rem;
+    }
+
+    section h2 {
+        font-size: 1.3rem;
+    }
+}
+
+@media (max-width: 480px) {
+    :root {
+        --spacing-md: 12px;
+        --spacing-lg: 12px;
+        --spacing-xl: 16px;
+    }
+
+    header h1 {
+        font-size: 1.1rem;
+    }
+
+    header nav ul {
+        gap: var(--spacing-xs);
+    }
+
+    header nav a {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.85rem;
+    }
+
+    section {
+        padding: var(--spacing-lg);
+    }
+
+    section h2 {
+        font-size: 1.1rem;
+        margin-bottom: var(--spacing-md);
+    }
+
+    .price-info-card {
+        padding: var(--spacing-md);
+    }
+
+    button {
+        padding: 10px 12px;
+        font-size: 0.85rem;
+    }
+
+    table th {
+        padding: 12px 8px;
+        font-size: 0.75rem;
+    }
+
+    table td {
+        padding: 12px 8px;
+        font-size: 0.85rem;
+    }
+}
+
+/* ================= ANIMATIONS ================= */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+section {
+    animation: fadeIn 0.4s ease;
+}
+
+header {
+    animation: slideDown 0.4s ease;
+}
+
+/* ================= SCROLLBAR STYLING ================= */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--light-gray);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--primary-orange);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--primary-orange-dark);
+}
+
+/* ================= PRINT STYLES ================= */
+@media print {
+    header, footer {
+        display: none;
+    }
+
+    section {
+        page-break-inside: avoid;
+        box-shadow: none;
+        border: 1px solid #ddd;
+    }
+
+    button, a {
+        display: none;
+    }
+}
+:root {
+    --primary: #e65100;
+    --primary-hover: #bf360c;
+    --bg-body: #fff3e0;
+    --bg-card: #ffffff;
+    --text-main: #2d3436;
+    --text-muted: #636e72;
+    --border-light: #ffe0b2;
+    --table-head: #fff8e1;
+    --shadow-card: 0 8px 30px rgba(0,0,0,0.08);
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    font-family: 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg-body);
+    color: var(--text-main);
+}
+
+/* Header */
+header {
+    background: var(--primary);
+    color: #fff;
+    padding: 16px;
+}
+
+header h1 {
+    margin: 0;
+}
+
+nav ul {
+    list-style: none;
+    display: flex;
+    gap: 20px;
+    padding: 0;
+}
+
+nav a {
+    color: #fff;
+    font-weight: 600;
+}
+
+/* Main */
+main {
+    max-width: 1100px;
+    margin: 30px auto;
+    background: var(--bg-card);
+    padding: 32px;
+    border-top: 5px solid var(--primary);
+    box-shadow: var(--shadow-card);
+}
+
+/* Sections */
+section { margin-bottom: 40px; }
+h2 { color: var(--primary); }
+
+/* Price Management */
+.price-management {
+    display: grid;
+    grid-template-columns: 1fr 1.5fr;
+    gap: 30px;
+}
+
+/* Forms */
+label { font-weight: 600; }
+input, select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid var(--border-light);
+    border-radius: 4px;
+}
+
+.btn-primary {
+    background: var(--primary);
+    color: #fff;
+    padding: 12px 20px;
+    border: none;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.btn-primary:hover {
+    background: var(--primary-hover);
+}
+
+/* Info Card */
+.price-info-card {
+    margin-top: 12px;
+    padding: 14px;
+    border: 1px dashed var(--primary);
+    background: #fff8e1;
+}
+
+/* Tables */
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th, td {
+    padding: 10px;
+    border: 1px solid var(--border-light);
+}
+
+thead { background: var(--table-head); }
+
+.text-center {
+    text-align: center;
+    color: var(--text-muted);
+}
+
+/* Footer */
+footer {
+    text-align: center;
+    padding: 20px;
+    color: var(--text-muted);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .price-management {
+        grid-template-columns: 1fr;
+    }
+}

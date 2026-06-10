@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Broker Registration - Mango Market</title>
+    <link rel="stylesheet" href="../css/auth.css">
+    <style>
+        h2 { color: #e65100 !important; }
+        .section-header { color: #e65100; border-bottom: 1px solid #ffe0b2; }
+        button { background: #e65100 !important; }
+        button:hover { background: #bf360c !important; }
+        .btn-grey { background-color: #6b7280 !important; }
+        .btn-green { background-color: #e65100 !important; }
+        a { color: #e65100; }
+        input:focus { border-color: #e65100 !important; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>Broker Registration</h2>
+        <p style="text-align: center; color: #666; margin-bottom: 25px;">
+            Join as a verified market partner.
+        </p>
+
+        <form id="brokerRegisterForm">
+            
+            <div class="section-header">1. Personal Details</div>
+            
+            <div class="form-group">
+                <label>Full Name *</label>
+                <input type="text" name="full_name" placeholder="Enter your full name" required>
+            </div>
+
+            <div class="form-group">
+                <label>Phone Number *</label>
+                <input type="tel" name="phone" pattern="[0-9]{10}" placeholder="10 digit mobile number" required>
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email Address *</label>
+                <div class="input-row">
+                    <input type="email" id="email" name="email" placeholder="Business email" required>
+                    <button type="button" id="sendOtpBtn" class="btn-grey">Get OTP</button>
+                </div>
+
+                <div id="otpSection" class="otp-container" style="display: none; margin-top: 10px;">
+                    <label class="otp-label">Enter OTP sent to your email</label>
+                    <div class="input-row">
+                        <input type="text" id="otpInput" placeholder="Enter 6-digit OTP" maxlength="6">
+                        <button type="button" id="verifyOtpBtn" class="btn-green">Verify</button>
+                    </div>
+                    <div class="timer-text" id="timer" style="margin-top:8px;">Resend OTP in <span id="countdown">30</span>s</div>
+                </div>
+
+                <div id="otpSuccessMsg" style="color: #2e7d32; font-weight: bold; margin-top: 10px; display: none;">
+                    ✅ Email Verified Successfully!
+                </div>
+            </div>
+
+            <div class="section-header">2. Market Information</div>
+
+            <div class="form-group">
+                <label>Agency / Market Name *</label>
+                <input type="text" name="market_name" placeholder="e.g. Royal Fruit Trading Co." required>
+            </div>
+
+            <div class="section-header">3. Location of Operation</div>
+
+            <div class="form-group">
+                <label>State *</label>
+                <input type="text" name="state" placeholder="e.g. Karnataka" required>
+            </div>
+
+            <div class="form-group">
+                <label>District *</label>
+                <input type="text" name="district" placeholder="e.g. Kolar" required>
+            </div>
+
+            <div class="form-group">
+                <label>City / Market Hub *</label>
+                <input type="text" name="city" placeholder="e.g. Srinivasapura Mandi" required>
+            </div>
+
+            <div class="section-header">4. Trade License Verification</div>
+
+            <div class="form-group">
+                <label>Mango Market Trade License *</label>
+                <p style="font-size: 0.9rem; color: #6b7280; margin: 5px 0 12px 0;">
+                    Upload your trade license (PDF, JPG, PNG - Max 5MB)
+                </p>
+                <div style="position: relative; background: #fef5f0; border: 2px dashed #e65100; border-radius: 8px; padding: 20px; text-align: center; cursor: pointer; transition: all 0.3s ease; min-height: 100px; display: flex; flex-direction: column; justify-content: center; align-items: center;" id="licenseUploadArea">
+                    <input type="file" id="tradeLicenseFile" name="trade_license_file" accept=".pdf,.jpg,.jpeg,.png" style="display: none;">
+                    <div style="font-size: 32px; margin-bottom: 10px;">📄</div>
+                    <div style="font-weight: 600; color: #e65100; margin-bottom: 5px;">
+                        <span id="uploadText">Click to upload or drag & drop</span>
+                    </div>
+                    <div style="font-size: 0.85rem; color: #6b7280;">
+                        PDF, JPG, PNG (Max 5MB)
+                    </div>
+                    <div style="font-size: 0.8rem; color: #10b981; margin-top: 8px; display: none;" id="fileSelectedText"></div>
+                </div>
+            </div>
+
+            <div class="section-header">5. Account Security & Terms</div>
+
+            <div class="form-group">
+                <label>Password *</label>
+                <input type="password" name="password" placeholder="Min 6 chars: mix letters, numbers, symbols" required>
+            </div>
+
+            <div class="form-group">
+                <label>Confirm Password *</label>
+                <input type="password" name="confirm_password" placeholder="Re-enter password" required>
+            </div>
+
+            <div class="fee-box">
+                <p style="font-weight: 600; color: #e65100; margin: 0 0 12px 0;">Platform Registration Fee</p>
+                <div class="checkbox-group" style="background: transparent; border: none; padding: 0; margin: 0;">
+                    <input type="checkbox" id="platform_fee_paid" name="platform_fee_paid">
+                    <label for="platform_fee_paid" style="margin: 0; color: #1f2937; font-weight: 500;">
+                        I agree to pay the <strong>₹500 Platform Registration Fee</strong> for broker account activation.
+                    </label>
+                </div>
+            </div>
+
+            <button type="submit" id="submitBtn" class="broker-btn">Register as Broker</button>
+            <p style="text-align: center; color: #d32f2f; font-size: 0.9rem; margin-top: 10px; display:block;" id="verifyWarning">
+                ⚠️ Please verify your email before submitting
+            </p>
+        </form>
+        
+        <div class="links">
+            <p>Already a partner? <a href="broker_login.html">Login here</a></p>
+            <p><a href="home.html">← Back to Home</a></p>
+        </div>
+    </div>
+
+    <script src="../js/api.js"></script>
+    <script src="../js/auth.js"></script>
+
+    <script>
+        // =====================================================
+        // TRADE LICENSE FILE UPLOAD - BROKER REGISTRATION
+        // =====================================================
+
+        const licenseUploadArea = document.getElementById('licenseUploadArea');
+        const tradeLicenseFile = document.getElementById('tradeLicenseFile');
+        const uploadText = document.getElementById('uploadText');
+        const fileSelectedText = document.getElementById('fileSelectedText');
+
+        const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+        const ALLOWED_EXTENSIONS = ['pdf', 'jpg', 'jpeg', 'png'];
+
+        // Click to upload
+        licenseUploadArea.addEventListener('click', () => {
+            tradeLicenseFile.click();
+        });
+
+        // File selection from input
+        tradeLicenseFile.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                validateAndSelectFile(file);
+            }
+        });
+
+        // Drag and drop
+        licenseUploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            licenseUploadArea.style.background = '#fff1eb';
+            licenseUploadArea.style.borderColor = '#bf360c';
+        });
+
+        licenseUploadArea.addEventListener('dragleave', () => {
+            licenseUploadArea.style.background = '#fef5f0';
+            licenseUploadArea.style.borderColor = '#e65100';
+        });
+
+        licenseUploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            licenseUploadArea.style.background = '#fef5f0';
+            licenseUploadArea.style.borderColor = '#e65100';
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                validateAndSelectFile(files[0]);
+            }
+        });
+
+        function validateAndSelectFile(file) {
+            // Validate file size
+            if (file.size > MAX_FILE_SIZE) {
+                alert(`File is too large. Maximum size is 5MB (yours is ${(file.size / 1024 / 1024).toFixed(2)}MB)`);
+                tradeLicenseFile.value = '';
+                return;
+            }
+
+            // Validate file extension
+            const extension = file.name.split('.').pop().toLowerCase();
+            if (!ALLOWED_EXTENSIONS.includes(extension)) {
+                alert('Invalid file type. Only PDF, JPG, and PNG files are allowed.');
+                tradeLicenseFile.value = '';
+                return;
+            }
+
+            // File is valid - show confirmation
+            uploadText.textContent = '✓ File selected';
+            uploadText.style.color = '#10b981';
+            fileSelectedText.style.display = 'block';
+            fileSelectedText.textContent = `📄 ${file.name} (${(file.size / 1024).toFixed(2)} KB)`;
+        }
+
+        // Override the default form submission to include file upload
+        const brokerRegisterForm = document.getElementById('brokerRegisterForm');
+        if (brokerRegisterForm) {
+            // Store the file input element reference
+            brokerRegisterForm.tradeLicenseFile = tradeLicenseFile;
+        }
+    </script>

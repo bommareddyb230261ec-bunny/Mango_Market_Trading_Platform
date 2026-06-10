@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Broker Dashboard | Mango Market Trading Platform</title>
+    <link rel="stylesheet" href="../css/broker_dashboard.css">
+    <script src="../js/api.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/broker.js" defer></script>
+</head>
+<body>
+    <aside class="sidebar" id="sidebar">
+        <div class="brand">
+            <div class="brand-mark">MM</div>
+            <div>
+                <h1>Mango Market</h1>
+                <p>Broker Portal</p>
+            </div>
+            <button class="icon-btn mobile-only" id="closeSidebarBtn" type="button" aria-label="Close menu">x</button>
+        </div>
+
+        <nav class="side-nav" aria-label="Broker navigation">
+            <button class="nav-item active" type="button" data-section="overview">
+                <span class="nav-icon">D</span>
+                <span>Dashboard</span>
+            </button>
+            <button class="nav-item" type="button" data-section="prices">
+                <span class="nav-icon">P</span>
+                <span>Prices & Commission</span>
+            </button>
+            <a class="nav-item" href="sell_request.html">
+                <span class="nav-icon">R</span>
+                <span>Sell Requests</span>
+                <span class="nav-badge" id="requestBadge">0</span>
+            </a>
+            <a class="nav-item" href="transactions.html">
+                <span class="nav-icon">T</span>
+                <span>Transactions</span>
+            </a>
+            <a class="nav-item" href="weighment.html">
+                <span class="nav-icon">W</span>
+                <span>New Weighment</span>
+            </a>
+            <a class="nav-item" href="transactions.html">
+                <span class="nav-icon">Pay</span>
+                <span>Payments</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <a href="broker_profile.html" class="profile-link">Profile</a>
+            <button type="button" class="logout-btn" id="logoutBtn">Logout</button>
+        </div>
+    </aside>
+
+    <div class="app-shell">
+        <header class="topbar">
+            <button class="icon-btn mobile-only" id="openSidebarBtn" type="button" aria-label="Open menu">=</button>
+            <div>
+                <p class="eyebrow">Market Yard</p>
+                <h2 id="pageTitle">Dashboard</h2>
+            </div>
+            <div class="broker-chip">
+                <span id="brokerName">Broker</span>
+                <span class="avatar">B</span>
+            </div>
+        </header>
+
+        <main class="content">
+            <section class="view active" id="overviewView">
+                <div class="summary-grid">
+                    <article class="metric-card">
+                        <span class="metric-label">Active Varieties</span>
+                        <strong id="varietiesCount">0</strong>
+                    </article>
+                    <article class="metric-card urgent">
+                        <span class="metric-label">Pending Requests</span>
+                        <strong id="pendingCount">0</strong>
+                    </article>
+                    <article class="metric-card">
+                        <span class="metric-label">Commission</span>
+                        <strong id="commissionSummary">₹0.00</strong>
+                    </article>
+                    <article class="metric-card">
+                        <span class="metric-label">Transactions</span>
+                        <strong id="transactionCount">0</strong>
+                    </article>
+                </div>
+
+                <div class="work-grid">
+                    <article class="panel market-panel">
+                        <div class="panel-header">
+                            <div>
+                                <h3>Your Market Yard</h3>
+                                <p>Identity and operating area shown to farmers.</p>
+                            </div>
+                        </div>
+                        <div class="market-name" id="market-name-display">Market Yard</div>
+                        <div class="market-detail" id="market-location">Location not available</div>
+                        <div class="quick-row">
+                            <button class="btn primary" type="button" data-section="prices">Update Prices</button>
+                            <button class="btn secondary" type="button" data-section="requests">Review Requests</button>
+                        </div>
+                    </article>
+
+                    <article class="panel">
+                        <div class="panel-header">
+                            <div>
+                                <h3>Today’s Focus</h3>
+                                <p>Fast access to the broker tasks used most often.</p>
+                            </div>
+                        </div>
+                        <div class="task-list">
+                            <button class="task-item" type="button" data-section="requests">
+                                <span>Pending farmer requests</span>
+                                <strong id="pendingTaskCount">0</strong>
+                            </button>
+                            <button class="task-item" type="button" data-section="prices">
+                                <span>Buying prices listed</span>
+                                <strong id="varietyTaskCount">0</strong>
+                            </button>
+                            <button class="task-item" type="button" onclick="window.location.href='weighment.html'">
+                                <span>Record a new weighment</span>
+                                <strong>Open</strong>
+                            </button>
+                        </div>
+                    </article>
+                </div>
+
+                <article class="panel">
+                    <div class="panel-header">
+                        <div>
+                            <h3>Latest Activity</h3>
+                            <p>Recent requests and transactions from your market.</p>
+                        </div>
+                    </div>
+                    <div id="activityList" class="activity-list"></div>
+                </article>
+            </section>
+
+            <section class="view" id="pricesView">
+                <div class="section-heading">
+                    <div>
+                        <h2>Prices & Commission</h2>
+                        <p>Keep your buying rates and market commission ready before farmers place requests.</p>
+                    </div>
+                </div>
+
+                <div class="form-grid">
+                    <article class="panel">
+                        <div class="panel-header">
+                            <div>
+                                <h3>Market Commission</h3>
+                                <p>Rate is saved per ₹100 and copied into each new order.</p>
+                            </div>
+                        </div>
+                        <form id="commission-form" class="stack-form">
+                            <label for="market-commission">Commission per ₹100</label>
+                            <div class="money-input">
+                                <span>₹</span>
+                                <input type="number" id="market-commission" min="0" max="100" step="0.01" placeholder="8.00" required>
+                            </div>
+                            <button class="btn primary" type="submit">Update Commission</button>
+                        </form>
+                        <p class="inline-note">Current: <strong id="commission-display-text">₹0.00 per ₹100</strong></p>
+                    </article>
+
+                    <article class="panel">
+                        <div class="panel-header">
+                            <div>
+                                <h3>Update Existing Price</h3>
+                                <p>Change the buying rate for a variety already listed.</p>
+                            </div>
+                        </div>
+                        <form id="price-form" class="stack-form">
+                            <label for="mango-variety">Variety</label>
+                            <select id="mango-variety" required>
+                                <option value="">Select variety...</option>
+                            </select>
+                            <label for="current-price">Buying price per ton</label>
+                            <div class="money-input">
+                                <span>₹</span>
+                                <input type="number" id="current-price" min="0" step="100" placeholder="55000" required>
+                            </div>
+                            <button class="btn primary" type="submit">Update Price</button>
+                            <small>Last updated: <span id="last-update">Not updated yet</span></small>
+                        </form>
+                    </article>
+
+                    <article class="panel">
+                        <div class="panel-header">
+                            <div>
+                                <h3>Add New Variety</h3>
+                                <p>Add a fruit variety and opening buying rate.</p>
+                            </div>
+                        </div>
+                        <form id="add-fruit-form" class="stack-form">
+                            <label for="fruit-name">Variety name</label>
+                            <input type="text" id="fruit-name" name="fruit_name" placeholder="e.g., Totapuri" required>
+                            <label for="fruit-initial-price">Initial price per ton</label>
+                            <div class="money-input">
+                                <span>₹</span>
+                                <input type="number" id="fruit-initial-price" name="fruit_price" min="0" step="100" placeholder="55000" required>
+                            </div>
+                            <label for="fruit-quantity">Available quantity in tons</label>
+                            <input type="number" id="fruit-quantity" name="fruit_quantity" min="1" step="1" value="100">
+                            <button class="btn success" type="submit">Add Variety</button>
+                        </form>
+                    </article>
+                </div>
+
+                <article class="panel">
+                    <div class="panel-header">
+                        <div>
+                            <h3>Current Buying Prices</h3>
+                            <p>Farmers see these rates when they search your market.</p>
+                        </div>
+                    </div>
+                    <div id="marketPricesContainer" class="price-grid"></div>
+                </article>
+            </section>
+
+            <section class="view" id="requestsView">
+                <div class="section-heading">
+                    <div>
+                        <h2>Sell Requests</h2>
+                        <p>Accept requests, set final agreed price, and generate order IDs for weighment.</p>
+                    </div>
+                </div>
+
+                <article class="panel">
+                    <div class="table-wrap">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Farmer</th>
+                                    <th>Variety</th>
+                                    <th>Quantity</th>
+                                    <th>Preferred Date</th>
+                                    <th>Order Commission</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="requestsTableBody"></tbody>
+                        </table>
+                    </div>
+                </article>
+            </section>
+
+            <section class="view" id="transactionsView">
+                <div class="section-heading">
+                    <div>
+                        <h2>Transactions</h2>
+                        <p>Review completed trades and payment status.</p>
+                    </div>
+                    <a class="btn secondary" href="transactions.html">Open Payment Center</a>
+                </div>
+
+                <article class="panel">
+                    <div class="table-wrap">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Farmer</th>
+                                    <th>Date</th>
+                                    <th>Variety</th>
+                                    <th>Weight</th>
+                                    <th>Price</th>
+                                    <th>Commission</th>
+                                    <th>Net Payable</th>
+                                    <th>Payment</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="transactionsTableBody"></tbody>
+                        </table>
+                    </div>
+                </article>
+            </section>
+        </main>
+    </div>
+
+    <div id="acceptModal" class="modal" aria-hidden="true">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>Accept Sell Request</h3>
+                <button class="icon-btn" type="button" data-close-modal="acceptModal">x</button>
+            </div>
+            <div class="modal-body">
+                <dl class="request-summary">
+                    <div><dt>Farmer</dt><dd id="acceptFarmerName">-</dd></div>
+                    <div><dt>Variety</dt><dd id="acceptVariety">-</dd></div>
+                    <div><dt>Quantity</dt><dd id="acceptQuantity">-</dd></div>
+                </dl>
+                <form id="acceptForm" class="stack-form">
+                    <label for="acceptAgreedPrice">Agreed price per kg</label>
+                    <div class="money-input">
+                        <span>₹</span>
+                        <input type="number" id="acceptAgreedPrice" step="0.01" min="0" required>
+                    </div>
+                    <small id="acceptPriceHelp">Default uses current market price.</small>
+                    <label for="acceptExpectedDate">Expected delivery date</label>
+                    <input type="date" id="acceptExpectedDate" required>
+                    <div class="modal-actions">
+                        <button class="btn success" type="submit" id="acceptConfirmBtn">Accept Request</button>
+                        <button class="btn secondary" type="button" data-close-modal="acceptModal">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="rejectModal" class="modal" aria-hidden="true">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>Reject Sell Request</h3>
+                <button class="icon-btn" type="button" data-close-modal="rejectModal">x</button>
+            </div>
+            <div class="modal-body">
+                <p id="rejectFarmerInfo" class="muted">Enter rejection reason.</p>
+                <form id="rejectForm" class="stack-form">
+                    <label for="rejectReason">Reason</label>
+                    <textarea id="rejectReason" rows="4" placeholder="Explain why this request cannot be accepted" required></textarea>
+                    <div class="modal-actions">
+                        <button class="btn danger" type="submit" id="rejectConfirmBtn">Reject Request</button>
+                        <button class="btn secondary" type="button" data-close-modal="rejectModal">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="deleteModal" class="modal" aria-hidden="true">
+        <div class="modal-card small">
+            <div class="modal-header">
+                <h3>Delete Variety</h3>
+                <button class="icon-btn" type="button" data-close-modal="deleteModal">x</button>
+            </div>
+            <div class="modal-body">
+                <p id="deleteMessage">Delete this variety from your market?</p>
+                <div class="modal-actions">
+                    <button class="btn danger" type="button" id="confirmDeleteBtn">Delete</button>
+                    <button class="btn secondary" type="button" data-close-modal="deleteModal">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

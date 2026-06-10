@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Broker Login - Mango Market</title>
+    <link rel="stylesheet" href="../css/auth.css">
+    <style>
+        /* Broker Theme - Orange */
+        h2 { color: #e65100 !important; }
+        button, .btn-primary, .broker-btn { background: #e65100 !important; }
+        button:hover, .btn-primary:hover, .broker-btn:hover { background: #bf360c !important; }
+        
+        /* Broker-specific button styles */
+        .btn-outline { border-color: #e65100 !important; color: #e65100 !important; }
+        .btn-outline:hover { border-color: #bf360c !important; color: #bf360c !important; background: rgba(230, 81, 0, 0.1) !important; }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            background: #ffffff;
+            margin: 5% auto;
+            padding: 40px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 480px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+            animation: slideDown 0.3s ease-out;
+            border: 1px solid #e5e7eb;
+        }
+
+        @keyframes slideDown {
+            from { transform: translateY(-30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .modal-close {
+            color: #9ca3af;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            line-height: 20px;
+            transition: color 0.25s ease;
+        }
+
+        .modal-close:hover {
+            color: #e65100;
+        }
+
+        .modal h2 {
+            color: #e65100;
+            margin-top: 0;
+            margin-bottom: 20px;
+            font-size: 24px;
+            clear: both;
+        }
+
+        .modal-step {
+            display: none;
+        }
+
+        .modal-step.active {
+            display: block;
+        }
+
+        .step-indicator {
+            text-align: center;
+            color: #6b7280;
+            margin-bottom: 16px;
+            font-size: 14px;
+        }
+
+        .modal-form-group {
+            margin-bottom: 16px;
+        }
+
+        .modal-form-group label {
+            display: none;
+        }
+
+        .modal-form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e65100;
+            border-radius: 6px;
+            font-size: 14px;
+            box-sizing: border-box;
+            transition: all 0.25s ease;
+            background-color: #ffffff;
+        }
+
+        .modal-form-group input:focus {
+            outline: none;
+            border-color: #e65100;
+            box-shadow: 0 0 0 3px rgba(230, 81, 0, 0.15);
+        }
+
+        .modal-form-group input.error {
+            border-color: #dc2626 !important;
+            background-color: #fef2f2 !important;
+        }
+
+        .modal-form-group .field-error {
+            display: block;
+            margin-top: 6px;
+            color: #dc2626;
+            font-size: 13px;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .modal-buttons button {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.25s ease;
+        }
+
+        .btn-primary {
+            background: #e65100;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #bf360c;
+        }
+
+        .btn-secondary {
+            background-color: #e5e7eb;
+            color: #1f2937;
+            border: none;
+        }
+
+        .btn-secondary:hover {
+            background-color: #d1d5db;
+        }
+
+        .success-message {
+            background: #fff3e0;
+            color: #b45309;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 16px;
+            border-left: 4px solid #e65100;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #e65100;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 8px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>Broker Login</h2>
+        <p>Welcome! Please login to access your trading dashboard.</p>
+
+        <form id="brokerLoginForm">
+            <div class="form-group">
+                <label for="identifier">Phone Number or Email</label>
+                <input type="text" id="identifier" name="identifier" placeholder="Email address or mobile number" required>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" placeholder="Password" required>
+            </div>
+
+            <button type="submit" class="broker-btn">Log in</button>
+        </form>
+
+        <div class="links">
+            <a href="#" id="forgotPasswordLink" class="forgot-password-btn">Forgotten password?</a>
+            <a href="new_broker_register.html" class="btn-outline" style="display: block; text-decoration: none; text-align: center;\">Create new account</a>
+            <p style="text-align: center; margin-top: 20px;\"><a href="home.html" style="text-decoration: none; color: #e65100; font-size: 14px;\">← Back to Home</a></p>
+        </div>
+    </div>
+
+    <!-- Forgot Password Modal -->
+    <div id="forgotPasswordModal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" id="modalClose">&times;</span>
+
+            <!-- Step 1: Email Entry -->
+            <div id="step1" class="modal-step active">
+                <h2>Forgot Password?</h2>
+                <p style="color: #6b7280; margin-bottom: 16px; font-size: 14px;">
+                    Enter your registered email to receive an OTP.
+                </p>
+
+                <div class="modal-form-group">
+                    <label for="forgotEmail">Registered Email</label>
+                    <input type="email" id="forgotEmail" name="email" placeholder="Enter your registered email" required>
+                    <div class="field-error"></div>
+                </div>
+
+                <div class="modal-buttons">
+                    <button type="button" class="btn-secondary" id="cancelBtn1">Cancel</button>
+                    <button type="button" class="btn-primary" id="sendOtpBtn">Send OTP</button>
+                </div>
+            </div>
+
+            <!-- Step 2: OTP Verification -->
+            <div id="step2" class="modal-step">
+                <h2>Verify OTP</h2>
+                <p style="color: #6b7280; margin-bottom: 16px; font-size: 14px;">
+                    Enter the 6-digit OTP sent to your email.
+                </p>
+
+                <div class="step-indicator">
+                    OTP valid for 5 minutes
+                </div>
+
+                <div class="modal-form-group">
+                    <label for="otpInput">Enter OTP</label>
+                    <input type="text" id="otpInput" name="otp" placeholder="000000" maxlength="6" pattern="\d{6}" required>
+                    <div class="field-error"></div>
+                </div>
+
+                <div class="modal-buttons">
+                    <button type="button" class="btn-secondary" id="cancelBtn2">Back</button>
+                    <button type="button" class="btn-primary" id="verifyOtpBtn">Verify OTP</button>
+                </div>
+            </div>
+
+            <!-- Step 3: Password Reset -->
+            <div id="step3" class="modal-step">
+                <h2>Create New Password</h2>
+                <p style="color: #6b7280; margin-bottom: 16px; font-size: 14px;">
+                    Enter your new password (min 6 characters with letters, numbers, symbols).
+                </p>
+
+                <div class="modal-form-group">
+                    <label for="newPassword">New Password</label>
+                    <input type="password" id="newPassword" name="new_password" placeholder="Min 6 chars: mix letters, numbers, symbols" required>
+                    <div class="field-error"></div>
+                </div>
+
+                <div class="modal-form-group">
+                    <label for="confirmPassword">Confirm Password</label>
+                    <input type="password" id="confirmPassword" name="confirm_password" placeholder="Re-enter password" required>
+                    <div class="field-error"></div>
+                </div>
+
+                <div class="modal-buttons">
+                    <button type="button" class="btn-secondary" id="cancelBtn3">Cancel</button>
+                    <button type="button" class="btn-primary" id="resetPasswordBtn">Reset Password</button>
+                </div>
+            </div>
+
+            <!-- Step 4: Success -->
+            <div id="step4" class="modal-step">
+                <h2 style="color: #b45309;">✓ Success!</h2>
+                <div class="success-message">
+                    Your password has been reset successfully.
+                </div>
+                <p style="color: #6b7280; margin-bottom: 16px; font-size: 14px;">
+                    You can now login with your new password.
+                </p>
+
+                <div class="modal-buttons">
+                    <button type="button" class="btn-primary" id="loginBtn" style="width: 100%;">Back to Login</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/api.js"></script>
+    <script src="../js/auth.js"></script>
+</body>
+</html>

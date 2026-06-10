@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weighment | Mango Market Farmer</title>
+    <link rel="stylesheet" href="../css/farmer-base.css">
+    <link rel="stylesheet" href="../css/farmer-sections.css">
+</head>
+<body>
+    <header class="page-header">
+        <div class="page-header__brand">
+            <a href="../farmer_dashboard.html" class="brand-link">
+                <span class="brand-logo">🥭</span>
+                <div>
+                    <h1>Mango Market</h1>
+                    <p>Weighment</p>
+                </div>
+            </a>
+        </div>
+        <nav class="page-nav">
+            <a href="../farmer_dashboard.html">Dashboard</a>
+            <a href="my_requests.html">Requests</a>
+            <a href="accepted_requests.html">Accepted</a>
+            <a href="weighment.html" class="active">Weighment</a>
+            <a href="payments.html">Payments</a>
+            <button id="logoutBtn" class="btn-link">Logout</button>
+        </nav>
+    </header>
+
+    <main class="page-content">
+        <div class="section-header">
+            <div>
+                <h2 class="section-title">Weighment</h2>
+                <p class="section-subtitle">View completed weighments, final weights, and the payment status for each order.</p>
+            </div>
+        </div>
+
+        <div class="table-wrapper">
+            <table class="dashboard-table">
+                <thead>
+                    <tr>
+                        <th>Order Date</th>
+                        <th>Order ID</th>
+                        <th>Variety</th>
+                        <th>Market Name</th>
+                        <th class="amount">Agreed Price (₹/kg)</th>
+                        <th>Weighment Date</th>
+                        <th class="amount">Final Weight (Tons)</th>
+                        <th class="amount">Final Price (₹/kg)</th>
+                        <th class="amount">Total Amount</th>
+                        <th class="amount">Commission</th>
+                        <th class="status-col">Payment Status</th>
+                    </tr>
+                </thead>
+                <tbody id="weighmentsTableBody"></tbody>
+            </table>
+        </div>
+    </main>
+
+    <script src="../js/api.js"></script>
+    <script src="../js/farmer-common.js"></script>
+    <script src="../js/farmer_weighment.js"></script>
+</body>
+</html>

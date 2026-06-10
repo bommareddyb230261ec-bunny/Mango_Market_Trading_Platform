@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Host Access - Mango Market Platform</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .password-container {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            max-width: 450px;
+            text-align: center;
+        }
+
+        .password-container h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+            font-weight: 600;
+        }
+
+        .password-container p {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .password-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .password-form input {
+            padding: 12px 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .password-form input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 8px rgba(102, 126, 234, 0.2);
+        }
+
+        .password-form button {
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .password-form button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .password-form button:active {
+            transform: translateY(0);
+        }
+
+        #errorMessage {
+            display: none;
+            color: #e74c3c;
+            text-align: center;
+            font-size: 14px;
+            margin-top: 15px;
+            padding: 10px;
+            background: #fadbd8;
+            border-radius: 5px;
+            border-left: 4px solid #e74c3c;
+        }
+
+        .logo {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="password-container">
+        <div class="logo">🔐</div>
+        <h1>Host Access</h1>
+        <p>Enter the host password to access the broker verification panel</p>
+        <div class="password-form">
+            <input 
+                type="password" 
+                id="hostPassword" 
+                placeholder="Enter host password"
+                autocomplete="off"
+            >
+            <button 
+                type="button" 
+                id="verifyAccessBtn"
+                onclick="verifyHostAccess()"
+            >
+                Verify Access
+            </button>
+            <div id="errorMessage"></div>
+        </div>
+    </div>
+
+    <script>
+        // Prefer the backend on port 5000 when developing locally (static server often runs on :5500)
+        // This ensures API calls go to the backend at :5000 rather than the static server origin.
+        const API_BASE = `${location.protocol}//${location.hostname}:5000`;
+
+        // Setup event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            const passwordInput = document.getElementById('hostPassword');
+            if (passwordInput) {
+                // Allow Enter key to submit
+                passwordInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        verifyHostAccess();
+                    }
+                });
+            }
+        });
+
+        async function verifyHostAccess() {
+            const password = document.getElementById('hostPassword').value;
+            const errorMsg = document.getElementById('errorMessage');
+            
+            if (!password) {
+                if (errorMsg) {
+                    errorMsg.textContent = 'Please enter the host password';
+                    errorMsg.style.display = 'block';
+                }
+                return;
+            }
+            
+            try {
+                console.log('[Host Access] Verifying password...');
+                
+                const response = await fetch(`${API_BASE}/api/host/verify`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ password: password })
+                });
+
+                console.log('[Host Access] API Response Status:', response.status);
+
+                // Try to parse JSON safely; if response is not JSON, show its text for debugging
+                let data = null;
+                try {
+                    const ct = response.headers.get('content-type') || '';
+                    if (ct.includes('application/json')) {
+                        data = await response.json();
+                    } else {
+                        const txt = await response.text();
+                        // If empty, provide a helpful message
+                        throw new Error(txt || `Unexpected non-JSON response (status ${response.status})`);
+                    }
+                } catch (parseError) {
+                    console.error('[Host Access] Failed to parse JSON response:', parseError);
+                    if (errorMsg) {
+                        errorMsg.textContent = `Error: ${parseError.message || parseError}. Please check if backend is running on ${API_BASE}`;
+                        errorMsg.style.display = 'block';
+                    }
+                    return;
+                }
+                console.log('[Host Access] API Response Data:', data);
+                
+                if (data.success === true) {
+                    console.log('[Host Access] Password verified successfully');
+                    
+                    // Clear any error messages
+                    if (errorMsg) {
+                        errorMsg.style.display = 'none';
+                        errorMsg.textContent = '';
+                    }
+                    
+                    // Store verification in localStorage (required by host_dashboard.html)
+                    localStorage.setItem('host_password_verified', 'true');
+                    console.log('[Host Access] Session stored in localStorage');
+                    
+                    // Redirect to host_dashboard.html
+                    window.location.href = 'host_dashboard.html';
+                } else {
+                    console.log('[Host Access] Password verification failed');
+                    
+                    if (errorMsg) {
+                        errorMsg.textContent = data.message || 'Invalid host password';
+                        errorMsg.style.display = 'block';
+                    }
+                    
+                    // Clear the password input
+                    document.getElementById('hostPassword').value = '';
+                    document.getElementById('hostPassword').focus();
+                }
+            } catch (error) {
+                console.error('[Host Access] Error verifying password:', error);
+                if (errorMsg) {
+                    errorMsg.textContent = `Error: ${error.message}. Please check if backend is running on http://127.0.0.1:5000`;
+                    errorMsg.style.display = 'block';
+                }
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,129 @@
+# Environment Variables
+.env
+.env.local
+.env.*.local
+*.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Virtual Environments
+venv/
+env/
+ENV/
+.venv/
+.env.venv
+env.bak/
+venv.bak/
+
+# IDE & Editor Files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+*.sublime-project
+*.sublime-workspace
+.project
+.pydevproject
+.settings/
+
+# Testing
+.pytest_cache/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+htmlcov/
+
+# Security & Keys
+*.key
+*.pem
+*.pub
+*.crt
+fernet.key
+encryption_key
+secret_key
+
+# Database Files
+*.db
+*.sqlite
+*.sqlite3
+database.db
+*.db-journal
+
+# Logs
+*.log
+logs/
+*.log.*
+
+# Temporary Files
+*.tmp
+*.bak
+*.swp
+*~
+.temp/
+tmp/
+
+# OS Specific
+.DS_Store
+Thumbs.db
+*.lnk
+.directory
+
+# Node (if using npm in frontend)
+node_modules/
+npm-debug.log
+yarn-error.log
+package-lock.json
+
+# Uploaded/Generated Files
+instance/uploads/
+instance/payment_proofs/
+instance/trade_licenses/
+
+# VS Code specific
+.vscode/settings.json
+.vscode/tasks.json
+.vscode/launch.json
+.vscode/extensions.json
+
+# Python
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+
+# Flask specific
+instance/
+.webassets-cache
+
+# IDE specific Python
+.pylint.d/

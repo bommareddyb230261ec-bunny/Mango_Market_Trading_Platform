@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Farmer Dashboard | Mango Market Trading Platform</title>
+    <link rel="stylesheet" href="../css/farmer.css">
+    <script src="../js/api.js"></script>
+    <script src="../js/auth.js"></script>
+</head>
+<body>
+    <aside class="sidebar" id="sidebar">
+        <div class="brand">
+            <div class="brand-mark">MM</div>
+            <div>
+                <h1>Mango Market</h1>
+                <p>Farmer Portal</p>
+            </div>
+            <button class="icon-btn mobile-only" id="closeSidebarBtn" type="button" aria-label="Close menu">x</button>
+        </div>
+
+        <nav class="side-nav" aria-label="Farmer navigation">
+            <button class="nav-item active" type="button" data-section="overview">
+                <span class="nav-icon">🛒</span>
+                <span>Find Markets</span>
+            </button>
+            <a class="nav-item" href="farmer/my_requests.html">
+                <span class="nav-icon">📝</span>
+                <span>My Requests</span>
+                <span class="nav-badge" id="requestBadge">0</span>
+            </a>
+            <a class="nav-item" href="farmer/accepted_requests.html">
+                <span class="nav-icon">✅</span>
+                <span>Accepted Requests</span>
+            </a>
+            <a class="nav-item" href="farmer/weighment.html">
+                <span class="nav-icon">⚖️</span>
+                <span>Weighment</span>
+            </a>
+            <a class="nav-item" href="farmer/payments.html">
+                <span class="nav-icon">💰</span>
+                <span>Payments</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <a href="farmer_profile.html" class="profile-link">Profile</a>
+            <button type="button" class="logout-btn" id="logoutBtn">Logout</button>
+        </div>
+    </aside>
+
+    <div class="app-shell">
+        <header class="topbar">
+            <button class="icon-btn mobile-only" id="openSidebarBtn" type="button" aria-label="Open menu">=</button>
+            <div>
+                <p class="eyebrow">Marketplace</p>
+                <h2 id="pageTitle">Find Markets</h2>
+            </div>
+            <div class="farmer-chip">
+                <span id="farmerName">Farmer</span>
+                <span class="avatar">F</span>
+            </div>
+        </header>
+
+        <main class="content">
+            <section class="view active" id="overviewView">
+                <div class="summary-grid">
+                    <article class="metric-card">
+                        <span class="metric-label">Markets Found</span>
+                        <strong id="marketsCount">0</strong>
+                    </article>
+                    <article class="metric-card urgent">
+                        <span class="metric-label">Active Requests</span>
+                        <strong id="activeRequests">0</strong>
+                    </article>
+                    <article class="metric-card">
+                        <span class="metric-label">Accepted Orders</span>
+                        <strong id="acceptedOrders">0</strong>
+                    </article>
+                    <article class="metric-card">
+                        <span class="metric-label">Pending Payments</span>
+                        <strong id="pendingPayments">₹0</strong>
+                    </article>
+                </div>
+
+                <div class="work-grid">
+                    <article class="panel search-panel">
+                        <div class="panel-header">
+                            <div>
+                                <h3>Find Buyers & Markets</h3>
+                                <p>Search for market yards offering the best prices.</p>
+                            </div>
+                        </div>
+                        <form id="searchForm" class="search-form-inline">
+                            <label for="locationSelect">Select Location</label>
+                            <select id="locationSelect" required>
+                                <option value="">Loading locations...</option>
+                            </select>
+                            <button type="submit" class="btn primary">Search Markets</button>
+                        </form>
+                    </article>
+
+                    <article class="panel">
+                        <div class="panel-header">
+                            <div>
+                                <h3>Today's Tasks</h3>
+                                <p>Quick access to frequently used actions.</p>
+                            </div>
+                        </div>
+                        <div class="task-list">
+                            <button class="task-item" type="button" onclick="window.location.href='farmer/my_requests.html'">
+                                <span>Check pending requests</span>
+                                <strong id="myRequestsCount">0</strong>
+                            </button>
+                            <button class="task-item" type="button" onclick="window.location.href='farmer/accepted_requests.html'">
+                                <span>View accepted orders</span>
+                                <strong id="acceptedCount">0</strong>
+                            </button>
+                            <button class="task-item" type="button" onclick="window.location.href='farmer/payments.html'">
+                                <span>Payment status</span>
+                                <strong>Open</strong>
+                            </button>
+                        </div>
+                    </article>
+                </div>
+
+                <article class="panel">
+                    <div class="panel-header">
+                        <div>
+                            <h3>Available Markets</h3>
+                            <p>Browse market yards in your district with live prices.</p>
+                        </div>
+                    </div>
+                    <div class="market-list-header">
+                        <div class="sort-controls">
+                            <label for="priceSort">Sort by:</label>
+                            <select id="priceSort" class="sort-select">
+                                <option value="price_desc">Price: High → Low</option>
+                                <option value="price_asc">Price: Low → High</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="marketListContainer" class="market-listings"></div>
+                </article>
+            </section>
+
+            <section class="view" id="my-requestsView">
+                <div class="section-heading">
+                    <div>
+                        <h2>My Sell Requests</h2>
+                        <p>Track all requests you have sent to market yards.</p>
+                    </div>
+                </div>
+
+                <article class="panel">
+                    <div class="table-wrap">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Market Yard</th>
+                                    <th>Variety</th>
+                                    <th>Quantity</th>
+                                    <th>Preferred Date</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="myRequestsTableBody">
+                                <tr><td colspan="6" class="empty-table">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </article>
+            </section>
+
+            <section class="view" id="acceptedView">
+                <div class="section-heading">
+                    <div>
+                        <h2>Accepted Requests</h2>
+                        <p>Orders that have been accepted by market yards. Ready for weighment and delivery.</p>
+                    </div>
+                </div>
+
+                <article class="panel">
+                    <div class="table-wrap">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Market Yard</th>
+                                    <th>Variety</th>
+                                    <th>Quantity</th>
+                                    <th>Agreed Price</th>
+                                    <th>Delivery Date</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="acceptedTableBody">
+                                <tr><td colspan="6" class="empty-table">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </article>
+            </section>
+        </main>
+    </div>
+
+    <div id="sellModal" class="modal" aria-hidden="true">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>Send Sell Request</h3>
+                <button class="icon-btn" type="button" data-close-modal="sellModal">x</button>
+            </div>
+            <div class="modal-body">
+                <dl class="request-summary">
+                    <div><dt>Market</dt><dd id="sellMarketName">-</dd></div>
+                </dl>
+                <form id="sellForm" class="stack-form">
+                    <input type="hidden" id="sellMarketId">
+                    
+                    <label for="mangoVariety">Mango Variety</label>
+                    <select id="mangoVariety" required>
+                        <option value="">Select variety...</option>
+                    </select>
+                    <div id="selectedPricePreview"></div>
+
+                    <label for="quantity">Quantity (Tons)</label>
+                    <input type="number" id="quantity" step="0.1" min="0" required placeholder="Enter quantity">
+
+                    <label for="sellDate">Preferred Delivery Date</label>
+                    <input type="date" id="sellDate" required>
+
+                    <div class="modal-actions">
+                        <button class="btn success" type="submit">Submit Request</button>
+                        <button class="btn secondary" type="button" data-close-modal="sellModal">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="successModal" class="modal" aria-hidden="true">
+        <div class="modal-card small">
+            <div class="modal-header">
+                <h3>Success</h3>
+                <button class="icon-btn" type="button" data-close-modal="successModal">x</button>
+            </div>
+            <div class="modal-body">
+                <p id="successMessage">Request submitted successfully!</p>
+                <div class="modal-actions">
+                    <button class="btn primary" type="button" data-close-modal="successModal">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="errorModal" class="modal" aria-hidden="true">
+        <div class="modal-card small">
+            <div class="modal-header">
+                <h3>Error</h3>
+                <button class="icon-btn" type="button" data-close-modal="errorModal">x</button>
+            </div>
+            <div class="modal-body">
+                <p id="errorMessage">An error occurred.</p>
+                <div class="modal-actions">
+                    <button class="btn secondary" type="button" data-close-modal="errorModal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="../js/farmer_dashboard.js" defer></script>
+</body>
+</html>
+ 

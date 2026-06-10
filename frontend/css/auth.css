@@ -1,0 +1,553 @@
+/* =========================================
+   PROFESSIONAL LOGIN FORMS - FARMER & BROKER
+   Clean, Minimal, Social-Media Style
+   ========================================= */
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+/* =========================================
+   BODY & GENERAL STYLES
+   ========================================= */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+    background: #ffffff;
+    color: #1f2937;
+    line-height: 1.6;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 16px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* =========================================
+   CONTAINER - LOGIN FORM CARD
+   ========================================= */
+.container {
+    background: #ffffff;
+    width: 100%;
+    max-width: 480px;
+    padding: 48px 32px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e5e7eb;
+    transition: all 0.25s ease;
+}
+
+.container:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* =========================================
+   TYPOGRAPHY
+   ========================================= */
+h2 {
+    text-align: center;
+    color: #059669;
+    margin-bottom: 24px;
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+}
+
+.container.broker-theme h2 {
+    color: #e65100;
+}
+
+h3 {
+    color: #1f2937;
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+p {
+    color: #6b7280;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    text-align: center;
+    margin-bottom: 24px;
+}
+
+/* =========================================
+   FORM GROUPS & INPUTS
+   ========================================= */
+.form-group {
+    margin-bottom: 20px;
+    position: relative;
+}
+
+label {
+    display: block;
+    font-weight: 500;
+    color: #374151;
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+}
+
+input[type="text"],
+input[type="email"],
+input[type="tel"],
+input[type="password"],
+input[type="number"],
+input[type="date"],
+select,
+textarea {
+    width: 100%;
+    padding: 18px 20px;
+    border: 2px solid #d1d5db;
+    border-radius: 24px;
+    font-size: 1rem;
+    color: #1f2937;
+    background-color: #ffffff;
+    transition: all 0.25s ease;
+    font-family: inherit;
+}
+
+input::placeholder,
+textarea::placeholder {
+    color: #9ca3af;
+    font-weight: 500;
+}
+
+/* Focus state */
+input:focus,
+select:focus,
+textarea:focus {
+    outline: none;
+    border-color: #0a66c2;
+    box-shadow: 0 0 0 3px rgba(10, 102, 194, 0.1);
+    background-color: #ffffff;
+    border-color: #0a66c2;
+}
+
+/* Error state */
+input.error,
+select.error,
+textarea.error {
+    border-color: #dc2626 !important;
+    background-color: #fef2f2 !important;
+}
+
+input.error:focus {
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1) !important;
+}
+
+/* OTP Container */
+.otp-container {
+    margin-top: 16px;
+    padding: 14px;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    animation: slideDown 0.3s ease-out;
+    position: relative;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* =========================================
+   BUTTONS
+   ========================================= */
+button,
+button[type="submit"],
+.btn-primary,
+.broker-btn {
+    width: 100%;
+    padding: 16px 24px;
+    background: #0a66c2;
+    color: #ffffff;
+    border: none;
+    border-radius: 32px;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 16px;
+    transition: all 0.25s ease;
+    box-shadow: none;
+    letter-spacing: 0.3px;
+    user-select: none;
+}
+
+button:hover,
+button[type="submit"]:hover,
+.btn-primary:hover,
+.broker-btn:hover {
+    background: #054b9f;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+button:active,
+button[type="submit"]:active {
+    background: #044291;
+}
+
+button:disabled {
+    background: #e4e6eb;
+}
+
+/* Outlined Button Style */
+.btn-outline {
+    background: transparent;
+    border: 2px solid #0a66c2;
+    color: #0a66c2;
+    padding: 14px 32px;
+    border-radius: 32px;
+    margin-top: 12px;
+}
+
+.btn-outline:hover {
+    background: rgba(10, 102, 194, 0.1);
+    border-color: #054b9f;
+    color: #054b9f;
+}
+
+.btn-outline:active {
+    background: rgba(10, 102, 194, 0.2);
+    border-color: #044291;
+    color: #044291;
+}
+
+/* Forgot Password Link Style */
+.forgot-password-btn {
+    display: block;
+    text-align: center;
+    padding: 0;
+    background: transparent;
+    color: #1f2937;
+    border: none;
+    border-radius: 0;
+    text-decoration: none;
+    font-size: 1rem;
+    font-weight: 400;
+    cursor: pointer;
+    margin: 24px 0 16px 0;
+    transition: all 0.25s ease;
+}
+
+.forgot-password-btn:hover {
+    background: transparent;
+    color: #0a66c2;
+    text-decoration: underline;
+}
+
+/* Input Row for Email + Button */
+.input-row {
+    display: flex;
+    gap: 10px;
+    align-items: stretch;
+    margin-bottom: 0;
+}
+
+.input-row input {
+    flex: 1;
+}
+
+.input-row button {
+    flex: 0 0 auto;
+    padding: 14px 16px;
+    width: auto;
+    margin-top: 0;
+}
+
+/* Button Variants */
+.btn-grey {
+    background-color: #6b7280 !important;
+    color: #ffffff !important;
+}
+
+.btn-grey:hover {
+    background-color: #4b5563 !important;
+}
+
+.btn-grey:disabled {
+    background-color: #d1d5db !important;
+}
+
+.btn-green {
+    background-color: #059669 !important;
+    color: #ffffff !important;
+}
+
+.btn-green:hover {
+    background-color: #047857 !important;
+}
+
+/* Timer Text */
+.timer-text {
+    text-align: center;
+    color: #6b7280;
+    font-size: 0.9rem;
+    margin-top: 10px;
+}
+
+.otp-label {
+    display: block;
+    font-size: 0.9rem;
+    color: #6b7280;
+    margin-bottom: 10px;
+    font-weight: 500;
+}
+
+/* =========================================
+   LINKS & TEXT
+   ========================================= */
+.links {
+    text-align: center;
+    margin-top: 24px;
+    font-size: 0.95rem;
+    color: #6b7280;
+}
+
+.links p {
+    margin-bottom: 12px;
+    text-align: center;
+}
+
+a {
+    color: #0a66c2;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.25s ease;
+    position: relative;
+    display: inline;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+/* =========================================
+   ERROR & SUCCESS MESSAGES
+   ========================================= */
+.field-error {
+    color: #dc2626;
+    font-size: 0.85rem;
+    margin-top: 6px;
+    margin-bottom: 10px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    animation: slideDown 0.2s ease-out;
+}
+
+.field-error::before {
+    content: '⚠';
+    font-size: 1rem;
+}
+
+#otpSuccessMsg {
+    color: #0a7c3d;
+    font-weight: 600;
+    margin-top: 16px;
+    padding: 12px 14px;
+    background: #e8f5e9;
+    border: 1px solid #c8e6c9;
+    border-radius: 8px;
+    animation: slideDown 0.3s ease-out;
+    box-shadow: none;
+}
+
+#verifyWarning {
+    color: #9c5f00;
+    background: #fff3cd;
+    padding: 12px 14px;
+    border: 1px solid #ffc107;
+    border-radius: 8px;
+    margin-top: 14px;
+    font-size: 0.9rem;
+    display: block;
+    animation: slideDown 0.3s ease-out;
+    box-shadow: none;
+}
+
+/* =========================================
+   CHECKBOX & AGREEMENT
+   ========================================= */
+.checkbox-group {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin: 16px 0;
+    padding: 14px;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    transition: all 0.25s ease;
+    cursor: pointer;
+}
+
+.checkbox-group:hover {
+    background: #f3f4f6;
+    border-color: #0a66c2;
+}
+
+.checkbox-group input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    cursor: pointer;
+    margin-top: 2px;
+    accent-color: #0a66c2;
+}
+
+.checkbox-group input[type="checkbox"].error {
+    border: 2px solid #dc2626;
+    background-color: #fef2f2;
+    accent-color: #dc2626;
+}
+
+.checkbox-group label {
+    display: block;
+    margin: 0;
+    font-weight: 500;
+    font-size: 0.9rem;
+    color: #6b7280;
+    cursor: pointer;
+    line-height: 1.4;
+}
+
+.fee-box {
+    background: #f9fafb;
+    border: 1px dashed #e5e7eb;
+    padding: 16px;
+    border-radius: 8px;
+    margin: 16px 0;
+}
+
+.fee-box:has(.error) {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+}
+
+/* =========================================
+   RESPONSIVE DESIGN
+   ========================================= */
+@media (max-width: 600px) {
+    .container {
+        padding: 40px 24px;
+        border-radius: 8px;
+        max-width: 100%;
+    }
+
+    h2 {
+        font-size: 1.75rem;
+        margin-bottom: 20px;
+    }
+
+    input,
+    select,
+    textarea {
+        padding: 14px;
+        font-size: 1rem;
+    }
+
+    button,
+    .btn-primary {
+        padding: 11px;
+        font-size: 0.95rem;
+    }
+}
+
+@media (max-width: 480px) {
+    body {
+        padding: 8px;
+    }
+
+    .container {
+        padding: 32px 20px;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+    }
+
+    h2 {
+        font-size: 1.5rem;
+    }
+
+    p {
+        font-size: 0.9rem;
+    }
+
+    input,
+    select,
+    textarea {
+        padding: 12px;
+        font-size: 16px;
+    }
+
+    button {
+        padding: 10px;
+        font-size: 0.9rem;
+        margin-top: 14px;
+    }
+}
+
+/* =========================================
+   ACCESSIBILITY
+   ========================================= */
+button:focus-visible,
+a:focus-visible {
+    outline: 2px solid #0a66c2;
+    outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* =========================================
+   UTILITY CLASSES
+   ========================================= */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+}
+
+.text-center {
+    text-align: center;
+}
+
+/* =========================================
+   LOGIN PAGE SPECIFIC STYLES
+   ========================================= */
+/* Hide labels on login pages */
+#farmerLoginForm label,
+#brokerLoginForm label,
+.modal label {
+    display: none !important;
+}
+
+/* Ensure modal form labels stay hidden */
+.modal-form-group label {
+    display: none !important;
+}

@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Profile | Mango Market Broker</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary: #d97706;
+            --primary-dark: #b45309;
+            --secondary: #f8f9fa;
+            --text-dark: #1f2937;
+            --text-light: #6b7280;
+            --border: #e5e7eb;
+            --white: #ffffff;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --radius: 12px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        
+        body { background-color: #f3f4f6; color: var(--text-dark); padding-bottom: 40px; }
+
+        /* Navigation */
+        header { background: var(--white); box-shadow: var(--shadow); position: sticky; top: 0; z-index: 50; }
+        .nav-container { max-width: 1200px; margin: 0 auto; padding: 1rem; display: flex; justify-content: space-between; align-items: center; }
+        .brand { font-size: 1.25rem; font-weight: 700; color: var(--primary); display: flex; align-items: center; gap: 8px; }
+        .nav-links span { font-weight: 600; color: var(--primary); margin-right: 15px; }
+        .nav-links a { text-decoration: none; color: var(--text-dark); margin-left: 15px; font-weight: 500; transition: color 0.2s; }
+        .nav-links a:hover { color: var(--primary); }
+
+        /* Main Container */
+        .container { max-width: 900px; margin: 40px auto; padding: 0 20px; }
+
+        /* Profile Card */
+        .card { background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+        
+        /* Header Visuals */
+        .profile-header {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            padding: 40px 30px;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 24px;
+        }
+        .avatar-circle {
+            width: 80px; height: 80px; background: rgba(255,255,255,0.2); border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; font-size: 2rem; color: white;
+            border: 3px solid rgba(255,255,255,0.5);
+        }
+        .header-info h2 { font-size: 1.75rem; margin-bottom: 4px; }
+        .header-info p { opacity: 0.9; font-size: 0.95rem; }
+
+        /* Form Body */
+        .card-body { padding: 30px; }
+        .section-title { font-size: 1.1rem; font-weight: 600; color: var(--text-dark); margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+        .section-title i { color: var(--primary); }
+        .divider { height: 1px; background: var(--border); margin: 30px 0; }
+
+        /* Grid System */
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
+        
+        .input-group { display: flex; flex-direction: column; gap: 6px; }
+        .input-group label { font-size: 0.85rem; font-weight: 600; color: var(--text-light); }
+        
+        /* Inputs */
+        input[type="text"], input[type="email"], input[type="password"] {
+            padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px;
+            font-size: 0.95rem; transition: all 0.2s; background: var(--white); width: 100%;
+        }
+        
+        /* Readonly / Disabled styling */
+        input[readonly], input[disabled] { background-color: #f9fafb; color: #6b7280; border-color: #f3f4f6; cursor: not-allowed; }
+        
+        /* Info Badge */
+        .info-badge {
+            display: inline-block; background: #dbeafe; color: #1e40af; padding: 6px 12px;
+            border-radius: 6px; font-size: 0.85rem; font-weight: 600; margin-top: 8px;
+        }
+        
+        .info-badge.paid {
+            background: #dcfce7; color: #166534;
+        }
+
+        .info-badge.pending {
+            background: #fef3c7; color: #92400e;
+        }
+
+        /* Action Bar */
+        .action-bar { margin-top: 30px; display: flex; justify-content: flex-end; gap: 12px; }
+        .btn { padding: 10px 24px; border-radius: 8px; font-weight: 500; cursor: pointer; border: none; transition: all 0.2s; display: flex; align-items: center; gap: 8px; font-size: 0.95rem; }
+        .btn-secondary { background: white; border: 1px solid var(--border); color: var(--text-dark); }
+        .btn-secondary:hover { background: #f9fafb; border-color: #d1d5db; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-dark); box-shadow: 0 4px 12px rgba(217, 119, 6, 0.2); }
+
+        @media (max-width: 640px) {
+            .profile-header { flex-direction: column; text-align: center; }
+            .form-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="nav-container">
+            <div class="brand">
+                <i class="fa-solid fa-leaf"></i> Mango Market
+            </div>
+            <nav class="nav-links">
+                <span id="welcomeUser">Profile</span>
+                <a href="broker_dashboard.html">Dashboard</a>
+                <a href="#" id="logoutBtn" style="color: #dc2626;"><i class="fa-solid fa-sign-out-alt"></i> Logout</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="card profile-card">
+            <div class="profile-header">
+                <div class="avatar-circle">
+                    <i class="fa-solid fa-briefcase"></i>
+                </div>
+                <div class="header-info">
+                    <h2>My Profile</h2>
+                    <p>View your broker account information</p>
+                </div>
+            </div>
+
+            <div class="card-body">
+                <div class="section-title">
+                    <i class="fa-regular fa-id-card"></i> Personal Information
+                </div>
+                
+                <div class="form-grid">
+                    <div class="input-group">
+                        <label>Full Name</label>
+                        <input type="text" id="fullName" readonly>
+                    </div>
+                    <div class="input-group">
+                        <label>Email Address</label>
+                        <input type="email" id="email" readonly>
+                    </div>
+                    <div class="input-group">
+                        <label>Phone Number</label>
+                        <input type="text" id="phone" readonly>
+                    </div>
+                </div>
+
+                <div class="divider"></div>
+
+                <div class="section-title">
+                    <i class="fa-solid fa-store"></i> Market Yard Details
+                </div>
+
+                <div class="form-grid">
+                    <div class="input-group" style="grid-column: 1 / -1;">
+                        <label>Market Yard Name</label>
+                        <input type="text" id="marketName" readonly>
+                    </div>
+                    <div class="input-group">
+                        <label>State</label>
+                        <input type="text" id="state" readonly>
+                    </div>
+                    <div class="input-group">
+                        <label>District</label>
+                        <input type="text" id="district" readonly>
+                    </div>
+                    <div class="input-group">
+                        <label>Market Area</label>
+                        <input type="text" id="marketArea" readonly>
+                    </div>
+                </div>
+
+                <div class="divider"></div>
+
+                <div class="section-title">
+                    <i class="fa-solid fa-file-contract"></i> Account Status
+                </div>
+
+                <div class="form-grid">
+                    <div class="input-group">
+                        <label>Platform Fee Status</label>
+                        <div style="margin-top: 8px;">
+                            <span id="feeStatus" class="info-badge pending">Checking...</span>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label>Registration Date</label>
+                        <input type="text" id="registrationDate" readonly>
+                    </div>
+                </div>
+
+                <div class="action-bar actions">
+                    <a href="broker_dashboard.html" class="btn btn-secondary">
+                        <i class="fa-solid fa-arrow-left"></i> Back to Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="../js/api.js"></script>
+    <script src="../js/broker_profile.js"></script>
+
+    <script>
+        // Update header with loaded data
+        window.addEventListener('load', () => {
+            const checkData = setInterval(() => {
+                const nameVal = document.getElementById('fullName').value;
+                if(nameVal) {
+                    document.querySelector('.header-info h2').innerText = nameVal;
+                    document.querySelector('.header-info p').innerText = document.getElementById('email').value;
+                    clearInterval(checkData);
+                }
+            }, 500);
+        });
+    </script>
+</body>
+</html>
