@@ -603,6 +603,15 @@ const PaymentProcessor = {
             document.getElementById('payment-commission').textContent = '₹0.00';
             document.getElementById('payment-net-payable').textContent = '₹' + totalAmount.toFixed(2);
 
+            {
+                const grossAmount = Number(data.gross_amount ?? data.total_amount ?? data.amount ?? 0);
+                const commission = Number(data.commission ?? 0);
+                const netPayable = Number(data.net_payable ?? data.amount ?? Math.max(grossAmount - commission, 0));
+                document.getElementById('payment-total-amount').textContent = '\u20b9' + grossAmount.toFixed(2);
+                document.getElementById('payment-commission').textContent = '\u20b9' + commission.toFixed(2);
+                document.getElementById('payment-net-payable').textContent = '\u20b9' + netPayable.toFixed(2);
+            }
+
             // Populate UPI details
             document.getElementById('payment-upi-id').textContent = data.upi_id || '-';
             

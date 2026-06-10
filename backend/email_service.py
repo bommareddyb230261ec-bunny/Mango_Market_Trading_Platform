@@ -200,3 +200,88 @@ def send_weighment_confirmation_email(
     """
     
     return send_email(farmer_email, subject, body)
+
+
+def send_payment_verified_email(
+    farmer_email: str,
+    farmer_name: str,
+    market_name: str,
+    order_id: str,
+    mango_variety: str,
+    total_amount: float,
+    commission_rate: float,
+    commission_amount: float,
+    credited_amount: float,
+    upi_transaction_id: str,
+    upi_id: str,
+    payment_date: str,
+    verified_date: str
+) -> bool:
+    """Send payment confirmation email after host verifies broker payment."""
+    subject = "Payment Verified - Amount Credited"
+
+    body = f"""
+    <html>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+            <div style="max-width: 640px; margin: 0 auto; padding: 20px;">
+                <h2 style="color: #2e7d32;">Payment debited Successfully</h2>
+
+                <p>Dear <strong>{farmer_name}</strong>,</p>
+
+                <p>Your payment from <strong>{market_name}</strong> has been verified by the host and marked as successfully paid.</p>
+
+                <div style="background: #f5f5f5; padding: 16px; border-left: 4px solid #2e7d32; margin: 20px 0;">
+                    <p style="margin-top: 0;"><strong>Payment Calculation</strong></p>
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <tr>
+                            <td style="padding: 8px 0;">Order ID:</td>
+                            <td style="padding: 8px 0; font-weight: bold;">{order_id}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px 0;">Mango Variety:</td>
+                            <td style="padding: 8px 0; font-weight: bold;">{mango_variety}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px 0;">Total Amount:</td>
+                            <td style="padding: 8px 0; font-weight: bold;">&#8377;{total_amount:,.2f}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px 0;">Commission ({commission_rate:.2f} per &#8377;100):</td>
+                            <td style="padding: 8px 0; font-weight: bold; color: #c62828;">- &#8377;{commission_amount:,.2f}</td>
+                        </tr>
+                        <tr style="border-top: 2px solid #2e7d32; font-size: 1.1em;">
+                            <td style="padding: 12px 0; font-weight: bold;">Total Amount Credited:</td>
+                            <td style="padding: 12px 0; font-weight: bold; color: #2e7d32;">&#8377;{credited_amount:,.2f}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px 0;">UPI ID:</td>
+                            <td style="padding: 8px 0; font-weight: bold;">{upi_id}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px 0;">UPI Transaction ID:</td>
+                            <td style="padding: 8px 0; font-weight: bold;">{upi_transaction_id}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px 0;">Payment Date:</td>
+                            <td style="padding: 8px 0; font-weight: bold;">{payment_date}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px 0;">Verified Date:</td>
+                            <td style="padding: 8px 0; font-weight: bold;">{verified_date}</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <p>Please check your bank account or UPI app balance to confirm the credited amount.</p>
+
+                <p style="margin-top: 30px; color: #666; font-size: 0.9em;">
+                    Thank you for choosing Mango Market Platform!<br>
+                    Best regards,<br>
+                    <strong>Mango Market Team</strong>
+                </p>
+            </div>
+        </body>
+    </html>
+    """
+
+    return send_email(farmer_email, subject, body)
