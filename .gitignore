@@ -1,66 +1,55 @@
-# Python
+# Python bytecode and caches
 __pycache__/
 *.py[cod]
 *$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
 
 # Virtual environments
 .venv/
 venv/
-ENV/
 env/
+ENV/
 
-# Distribution / packaging
-build/
-dist/
-*.egg-info/
-pip-wheel-metadata/
-
-# Installer logs
-pip-log.txt
-
-# Unit test / coverage
-.tox/
-.nox/
-.coverage
-.coverage.*
-.cache
-.pytest_cache/
-
-# Django stuff:
-*.log
-local_settings.py
-db.sqlite3
-media/
-
-# Flask instance folder
-instance/
-instance/uploads/
-
-# Env files
+# Local environment and secrets
 .env
 .env.*
+!.env.example
+*.key
+*.pem
 
-# PyCharm
-.idea/
-
-# VS Code
-.vscode/
-
-# macOS
-.DS_Store
-
-# Windows
-Thumbs.db
-
-# Node
-node_modules/
-
-# npm
-package-lock.json
-
-# Pack files (temporary)
-.git/objects/pack/tmp_pack_*
-
-# Others
+# Flask/local runtime data
+instance/
+backend/instance/
+*.sqlite
 *.sqlite3
 *.db
+
+# Uploaded/generated user files
+uploads/
+backend/uploads/
+backend/instance/uploads/
+
+# Frontend dependencies and build outputs
+node_modules/
+dist/
+build/
+.vite/
+.next/
+coverage/
+
+# Logs
+*.log
+logs/
+
+# OS/editor files
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
+*.swp
+*.swo
