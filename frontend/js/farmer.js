@@ -423,6 +423,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await res.json();
             
             if(res.ok) {
+                try {
+                    localStorage.setItem('mango_market_sell_requests_changed', String(Date.now()));
+                } catch (storageError) {
+                    console.warn('Could not publish sell request change:', storageError);
+                }
+
                 // Show success modal instead of alert
                 const successModal = document.getElementById('successModal');
                 const successMessage = document.getElementById('successMessage');

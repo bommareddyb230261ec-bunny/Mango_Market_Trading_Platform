@@ -21,8 +21,8 @@
         <nav class="header-nav">
             <ul>
                 <li><a href="broker_dashboard.html" class="nav-link">Dashboard</a></li>
-                <li><a href="#" class="nav-link active btn-sell-requests">📬 SELL REQUESTS</a></li>
-                <li><a href="transactions.html" class="nav-link btn-transactions">💳 TRANSACTIONS</a></li>
+                <li><a href="sell_request.html" class="nav-link active btn-sell-requests">Sell Requests <span class="request-count-badge" id="requestBadge">0</span></a></li>
+                <li><a href="transactions.html" class="nav-link btn-transactions">Transactions</a></li>
                 <li><a href="#" onclick="AuthManager.logout()" class="nav-link logout-btn">🚪 Logout</a></li>
             </ul>
         </nav>
@@ -390,6 +390,21 @@
         font-weight: 700;
     }
 
+    .request-count-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 24px;
+        height: 24px;
+        margin-left: 0.5rem;
+        padding: 0 0.45rem;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.22);
+        color: inherit;
+        font-size: 0.8rem;
+        font-weight: 800;
+    }
+
     .nav-link.btn-transactions {
         background: linear-gradient(135deg, var(--accent-blue), #2196f3);
         color: white;
@@ -589,6 +604,23 @@
         border-top: 1px solid #f0f0f0;
         display: flex;
         gap: 0.5rem;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+    }
+
+    .card-actions {
+        display: flex;
+        gap: 0.5rem;
+        margin-left: auto;
+    }
+
+    .btn-accept.compact,
+    .btn-reject.compact {
+        flex: 0 0 auto;
+        min-width: 0;
+        padding: 0.55rem 0.85rem;
+        font-size: 0.85rem;
     }
 
     .loading-card {
@@ -795,6 +827,8 @@ const SellRequestManager = {
     allSellRequests: [],
     filteredRequests: [],
     currentRequestId: null,
+    refreshTimer: null,
+    refreshIntervalMs: 5000,
     API_BASE: typeof API_BASE_URL !== 'undefined' ? API_BASE_URL : 
               (window.location.protocol + '//' + window.location.hostname + ':5000'),
 
@@ -808,6 +842,7 @@ const SellRequestManager = {
             }
             await this.loadSellRequests();
             this.setupEventListeners();
+            this.startAutoRefresh();
             console.log('✅ Sell Request Manager loaded successfully');
         } catch (error) {
             console.error('❌ Initialization failed:', error);
@@ -827,9 +862,10 @@ const SellRequestManager = {
             const data = await response.json();
             if (!data.success) throw new Error(data.error || 'Failed to load');
 
-            this.allSellRequests = data.sell_requests || [];
+            this.allSellRequests = this.sortRequests(data.sell_requests || []);
+            this.persistRequestSnapshot();
             this.filteredRequests = [...this.allSellRequests];
-            this.renderRequests();
+            this.applyFilters();
         } catch (error) {
             console.error('❌ Load error:', error);
             throw error;
@@ -841,24 +877,24 @@ const SellRequestManager = {
         if (!grid) return;
 
         if (this.filteredRequests.length === 0) {
-            grid.innerHTML = '<div class="loading-card"><p>No requests found</p></div>';
+            grid.innerHTML = '<div class="loading-card"><p>No pending sell requests.</p></div>';
             return;
         }
 
         grid.innerHTML = this.filteredRequests.map(request => `
             <div class="request-card" onclick="SellRequestManager.showDetails(${request.id})">
                 <div class="card-header-request">
-                    <p class="farmer-name">${request.farmer_name || `Farmer #${request.farmer_id}`}</p>
+                    <p class="farmer-name">${this.escapeHtml(request.farmer_name || `Farmer #${request.farmer_id}`)}</p>
                 </div>
                 <div class="card-body-request">
                     <div class="request-meta">
                         <div class="meta-item">
                             <div class="meta-label">Variety</div>
-                            <div class="meta-value">${request.variety}</div>
+                            <div class="meta-value">${this.escapeHtml(request.variety || '-')}</div>
                         </div>
                         <div class="meta-item">
                             <div class="meta-label">Quantity</div>
-                            <div class="meta-value">${request.quantity_tons.toFixed(2)} tons</div>
+                            <div class="meta-value">${Number(request.quantity_tons || 0).toFixed(2)} tons</div>
                         </div>
                     </div>
                     <div class="request-meta">
@@ -869,9 +905,15 @@ const SellRequestManager = {
                     </div>
                 </div>
                 <div class="card-footer-request">
-                    <span class="status-badge ${request.status.toLowerCase()}">
-                        ${request.status}
+                    <span class="status-badge ${String(request.status || 'PENDING').toLowerCase()}">
+                        ${this.escapeHtml(request.status || 'PENDING')}
                     </span>
+                    ${String(request.status || '').toUpperCase() === 'PENDING' ? `
+                        <div class="card-actions">
+                            <button class="btn-accept compact" type="button" onclick="event.stopPropagation(); SellRequestManager.acceptRequest(${request.id})">Accept</button>
+                            <button class="btn-reject compact" type="button" onclick="event.stopPropagation(); SellRequestManager.rejectRequest(${request.id})">Reject</button>
+                        </div>
+                    ` : ''}
                 </div>
             </div>
         `).join('');
@@ -970,6 +1012,7 @@ const SellRequestManager = {
     async confirmAcceptFromModal() {
         if (!this.currentRequestId) return;
 
+        const request = this.allSellRequests.find(r => Number(r.id) === Number(this.currentRequestId)) || {};
         const agreedPriceInput = document.getElementById('acceptAgreedPrice');
         const expectedDateInput = document.getElementById('acceptExpectedDate');
         
@@ -988,7 +1031,7 @@ const SellRequestManager = {
         }
 
         if (expectedDate) {
-            payload.expected_date = expectedDate;
+            payload.expected_delivery_date = expectedDate;
         }
 
         // Attach session token as fallback if available
@@ -1007,7 +1050,11 @@ const SellRequestManager = {
             if (data.success) {
                 this.showSuccess('Request accepted!');
                 this.closeModal();
-                await this.loadSellRequests();
+                this.setRequestStatus(this.currentRequestId, 'ACCEPTED', {
+                    agreed_price: payload.agreed_price || request.agreed_price || request.price_at_request || null,
+                    expected_delivery_date: payload.expected_delivery_date || request.preferred_date || null,
+                    order_id: data.data && data.data.order_id ? data.data.order_id : request.order_id
+                });
                 this.closeDetails();
             } else {
                 this.showError('Error: ' + (data.message || 'Failed to accept request'));
@@ -1035,7 +1082,7 @@ const SellRequestManager = {
             const data = await response.json();
             if (data.success) {
                 this.showSuccess('Request rejected');
-                await this.loadSellRequests();
+                this.setRequestStatus(requestId, 'REJECTED', { rejection_reason: reason });
                 this.closeDetails();
             }
         } catch (error) {
@@ -1044,22 +1091,89 @@ const SellRequestManager = {
     },
 
     filterByStatus() {
-        const status = document.getElementById('status-filter').value;
-        this.filteredRequests = status 
-            ? this.allSellRequests.filter(r => r.status === status.toUpperCase())
-            : [...this.allSellRequests];
-        this.renderRequests();
+        this.applyFilters();
     },
 
     searchRequests() {
-        const term = document.getElementById('search-box').value.toLowerCase();
+        this.applyFilters();
+    },
+
+    startAutoRefresh() {
+        if (this.refreshTimer) window.clearInterval(this.refreshTimer);
+        this.refreshTimer = window.setInterval(() => {
+            if (!document.hidden) this.refreshRequestsQuietly();
+        }, this.refreshIntervalMs);
+    },
+
+    async refreshRequestsQuietly() {
+        try {
+            await this.loadSellRequests();
+        } catch (error) {
+            console.warn('Sell requests refresh failed:', error);
+        }
+    },
+
+    updateRequestBadge() {
+        const pendingCount = this.allSellRequests.filter(r => String(r.status || '').toUpperCase() === 'PENDING').length;
+        const badge = document.getElementById('requestBadge');
+        if (badge) badge.textContent = pendingCount;
+    },
+
+    persistRequestSnapshot() {
+        try {
+            localStorage.setItem('mango_market_sell_requests', JSON.stringify(this.allSellRequests));
+        } catch (error) {
+            console.warn('Could not cache sell requests:', error);
+        }
+    },
+
+    notifyRequestChanged() {
+        try {
+            localStorage.setItem('mango_market_sell_requests_changed', String(Date.now()));
+        } catch (error) {
+            console.warn('Could not publish request change:', error);
+        }
+    },
+
+    applyFilters() {
         const status = document.getElementById('status-filter').value;
+        const term = document.getElementById('search-box').value.toLowerCase();
         this.filteredRequests = this.allSellRequests.filter(r => {
             const matchesSearch = (r.farmer_name || `Farmer #${r.farmer_id}`).toLowerCase().includes(term);
-            const matchesStatus = !status || r.status === status.toUpperCase();
+            const matchesStatus = !status || String(r.status || '').toUpperCase() === status.toUpperCase();
             return matchesSearch && matchesStatus;
         });
+        this.updateRequestBadge();
         this.renderRequests();
+    },
+
+    setRequestStatus(requestId, status, extra = {}) {
+        this.allSellRequests = this.sortRequests(this.allSellRequests.map(request => (
+            Number(request.id) === Number(requestId)
+                ? { ...request, status, ...extra }
+                : request
+        )));
+        this.persistRequestSnapshot();
+        this.notifyRequestChanged();
+        this.applyFilters();
+    },
+
+    sortRequests(requests) {
+        return [...requests].sort((a, b) => {
+            const bTime = new Date(b.created_at || b.date || b.preferred_date || 0).getTime();
+            const aTime = new Date(a.created_at || a.date || a.preferred_date || 0).getTime();
+            return (Number.isNaN(bTime) ? 0 : bTime) - (Number.isNaN(aTime) ? 0 : aTime);
+        });
+    },
+
+    escapeHtml(value) {
+        return String(value ?? '').replace(/[&<>"']/g, char => ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#39;'
+        }[char]));
     },
 
     formatDate(dateString) {
@@ -1105,6 +1219,16 @@ const SellRequestManager = {
                 }
             });
         }
+
+        window.addEventListener('storage', event => {
+            if (event.key === 'mango_market_sell_requests_changed') {
+                this.refreshRequestsQuietly();
+            }
+        });
+
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) this.refreshRequestsQuietly();
+        });
     }
 };
 

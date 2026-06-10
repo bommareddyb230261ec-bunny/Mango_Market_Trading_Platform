@@ -15,6 +15,8 @@ const BrokerDashboard = {
     weighments: [],
     marketPrices: [],
     activeSection: 'overview',
+    refreshTimer: null,
+    refreshIntervalMs: 5000,
 
     async init() {
         try {
@@ -22,6 +24,7 @@ const BrokerDashboard = {
             await this.loadDashboard();
             this.bindEvents();
             this.switchSection('overview');
+            this.startAutoRefresh();
         } catch (error) {
             console.error('Broker dashboard init failed:', error);
             this.notify('Failed to load dashboard: ' + error.message, 'error');
@@ -69,7 +72,7 @@ const BrokerDashboard = {
         if (!data.success) throw new Error(data.message || data.error || 'Unable to load dashboard');
 
         this.currentBroker = data.broker || {};
-        this.sellRequests = Array.isArray(data.sell_requests) ? data.sell_requests : [];
+        this.sellRequests = this.sortRequests(Array.isArray(data.sell_requests) ? data.sell_requests : []);
         this.transactions = Array.isArray(data.transactions) ? data.transactions : [];
         this.weighments = Array.isArray(data.weighments) ? data.weighments : [];
         this.marketPrices = Array.isArray(data.market_prices) ? data.market_prices : [];
@@ -501,6 +504,30 @@ const BrokerDashboard = {
                 document.getElementById('sidebar')?.classList.remove('open');
             }
         });
+
+        window.addEventListener('storage', event => {
+            if (event.key === 'mango_market_sell_requests_changed') {
+                this.refreshDashboardQuietly();
+            }
+        });
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) this.refreshDashboardQuietly();
+        });
+    },
+
+    startAutoRefresh() {
+        if (this.refreshTimer) window.clearInterval(this.refreshTimer);
+        this.refreshTimer = window.setInterval(() => {
+            if (!document.hidden) this.refreshDashboardQuietly();
+        }, this.refreshIntervalMs);
+    },
+
+    async refreshDashboardQuietly() {
+        try {
+            await this.loadDashboard();
+        } catch (error) {
+            console.warn('Dashboard refresh failed:', error);
+        }
     },
 
     switchSection(section) {
@@ -565,6 +592,14 @@ const BrokerDashboard = {
         if (['paid', 'accepted', 'completed'].includes(value)) return 'success';
         if (['rejected', 'failed'].includes(value)) return 'danger';
         return 'pending';
+    },
+
+    sortRequests(requests) {
+        return [...requests].sort((a, b) => {
+            const bTime = new Date(b.created_at || b.date || b.preferred_date || 0).getTime();
+            const aTime = new Date(a.created_at || a.date || a.preferred_date || 0).getTime();
+            return (Number.isNaN(bTime) ? 0 : bTime) - (Number.isNaN(aTime) ? 0 : aTime);
+        });
     },
 
     escapeHtml(value) {

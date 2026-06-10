@@ -518,6 +518,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await res.json();
             if (res.ok && data.success) {
                 showSuccess('Request submitted successfully!');
+                try {
+                    localStorage.setItem('mango_market_sell_requests_changed', String(Date.now()));
+                } catch (storageError) {
+                    console.warn('Could not publish sell request change:', storageError);
+                }
                 closeModal(sellModal);
                 sellForm.reset();
                 if (currentDistrict) fetchMarkets(currentDistrict, priceSort.value);
