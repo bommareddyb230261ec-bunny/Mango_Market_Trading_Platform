@@ -314,6 +314,7 @@ class Broker(db.Model):
     place_id = db.Column(db.Integer, db.ForeignKey('places.id'), nullable=False)
     market_name = db.Column(db.String(150), nullable=False)
     platform_fee_paid = db.Column(db.Boolean, default=False)
+    market_commission = db.Column(db.Float, default=0.0)
     registration_date = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     
     # Trade License Verification Fields
@@ -324,11 +325,12 @@ class Broker(db.Model):
     user = db.relationship('User', backref=db.backref('broker_profile', uselist=False))
     place = db.relationship('Place', backref='brokers')
 
-    def __init__(self, user_id: int, place_id: int, market_name: str, platform_fee_paid: bool = False, registration_date: Optional[datetime] = None, trade_license: Optional[str] = None, verification_status: str = "PENDING", rejection_reason: Optional[str] = None):
+    def __init__(self, user_id: int, place_id: int, market_name: str, platform_fee_paid: bool = False, market_commission: float = 0.0, registration_date: Optional[datetime] = None, trade_license: Optional[str] = None, verification_status: str = "PENDING", rejection_reason: Optional[str] = None):
         self.user_id = user_id
         self.place_id = place_id
         self.market_name = market_name
         self.platform_fee_paid = platform_fee_paid
+        self.market_commission = market_commission
         if registration_date:
             self.registration_date = registration_date
         self.trade_license = trade_license
@@ -379,6 +381,8 @@ class SellRequest(db.Model):
     agreed_price = db.Column(db.Float, nullable=True)  # price per kg at acceptance
     # Price captured at the time the farmer submitted the sell request (per kg)
     price_at_request = db.Column(db.Float, nullable=True)
+    # Commission rate captured at order/request time (rupees per 100 rupees)
+    order_commission = db.Column(db.Float, default=0.0)
     price_locked = db.Column(db.Boolean, default=False, nullable=False)
 
     # Status
@@ -391,7 +395,7 @@ class SellRequest(db.Model):
     # One-to-One Transaction
     transaction = db.relationship('Transaction', backref='sell_request', uselist=False)
 
-    def __init__(self, farmer_id: int, broker_id: int, quantity_tons: float, variety: str, preferred_date: date, order_id: Optional[str] = None, expected_delivery_date: Optional[date] = None, agreed_price: Optional[float] = None, price_at_request: Optional[float] = None, price_locked: bool = False, status: str = 'PENDING'):
+    def __init__(self, farmer_id: int, broker_id: int, quantity_tons: float, variety: str, preferred_date: date, order_id: Optional[str] = None, expected_delivery_date: Optional[date] = None, agreed_price: Optional[float] = None, price_at_request: Optional[float] = None, order_commission: float = 0.0, price_locked: bool = False, status: str = 'PENDING'):
         self.farmer_id = farmer_id
         self.broker_id = broker_id
         self.quantity_tons = quantity_tons
@@ -401,6 +405,7 @@ class SellRequest(db.Model):
         self.expected_delivery_date = expected_delivery_date
         self.agreed_price = agreed_price
         self.price_at_request = price_at_request
+        self.order_commission = order_commission
         self.price_locked = price_locked
         self.status = status
 
@@ -416,6 +421,7 @@ class SellRequest(db.Model):
             'expected_delivery_date': self.expected_delivery_date.strftime('%Y-%m-%d') if self.expected_delivery_date else None,
             'agreed_price': float(self.agreed_price) if self.agreed_price is not None else None,
             'price_at_request': float(self.price_at_request) if self.price_at_request is not None else None,
+            'order_commission': float(self.order_commission or 0),
             'price_locked': bool(self.price_locked),
             'status': self.status,
             'rejection_reason': self.rejection_reason,
@@ -519,6 +525,8 @@ class Weighment(db.Model):
             self.created_at = created_at
 
     def to_dict(self) -> dict[str, Any]:
+        total_amount = (float(self.actual_weight_tons) * 1000 * float(self.final_price_per_kg)) if self.actual_weight_tons is not None and self.final_price_per_kg is not None else 0.0
+        commission_info = calculate_market_commission(total_amount, self.sell_request or self.broker)
         return {
             'id': self.id,
             'broker_id': self.broker_id,
@@ -531,6 +539,10 @@ class Weighment(db.Model):
             'actual_weight_tons': self.actual_weight_tons,
             'quality_grade': self.quality_grade,
             'final_price_per_kg': float(self.final_price_per_kg),
+            'total_cost': commission_info['total_amount'],
+            'commission_rate': commission_info['commission_rate'],
+            'commission': commission_info['commission'],
+            'net_payable': commission_info['net_payable'],
             'remarks': self.remarks,
             'upi_transaction_id': self.upi_transaction_id,
             'payment_proof': self.payment_proof,
@@ -538,6 +550,23 @@ class Weighment(db.Model):
             'payment_status': self.payment_status or 'PENDING',
             'created_at': self.created_at.isoformat()
         }
+
+
+def calculate_market_commission(total_amount: float, commission_source: Optional[Any]) -> Dict[str, float]:
+    """Calculate commission and net payable using a stored order rate when available."""
+    total = float(total_amount or 0)
+    if commission_source is not None and getattr(commission_source, 'order_commission', None) is not None:
+        rate = float(getattr(commission_source, 'order_commission', 0) or 0)
+    else:
+        rate = float(getattr(commission_source, 'market_commission', 0) or 0)
+    commission = round((total * rate) / 100, 2)
+    net_payable = round(max(total - commission, 0), 2)
+    return {
+        'total_amount': round(total, 2),
+        'commission_rate': rate,
+        'commission': commission,
+        'net_payable': net_payable
+    }
 
 
 # ==================== FARMER ORDER MAPPING MODEL ====================
@@ -591,6 +620,8 @@ def ensure_sell_request_columns(engine: Any):
                 conn.execute(text("ALTER TABLE sell_requests ADD COLUMN agreed_price FLOAT"))
             if 'price_at_request' not in cols:
                 conn.execute(text("ALTER TABLE sell_requests ADD COLUMN price_at_request FLOAT"))
+            if 'order_commission' not in cols:
+                conn.execute(text("ALTER TABLE sell_requests ADD COLUMN order_commission FLOAT DEFAULT 0"))
             if 'price_locked' not in cols:
                 conn.execute(text("ALTER TABLE sell_requests ADD COLUMN price_locked BOOLEAN DEFAULT 0"))
     except Exception as e:
@@ -673,6 +704,8 @@ def ensure_broker_columns(engine: Any):
                 conn.execute(text("ALTER TABLE brokers ADD COLUMN verification_status VARCHAR(20) DEFAULT 'PENDING'"))
             if 'rejection_reason' not in cols:
                 conn.execute(text("ALTER TABLE brokers ADD COLUMN rejection_reason TEXT"))
+            if 'market_commission' not in cols:
+                conn.execute(text("ALTER TABLE brokers ADD COLUMN market_commission FLOAT DEFAULT 0"))
     except Exception as e:
         print('Broker schema check warning (non-fatal):', str(e))
 
@@ -1555,6 +1588,7 @@ def get_markets():
             markets.append({
                 'broker_id': broker.id,
                 'market_name': broker.market_name,
+                'market_commission': float(broker.market_commission or 0),
                 'broker_name': broker_name,
                 'broker_phone': broker_phone,
                 'city': place.market_area,
@@ -1653,8 +1687,8 @@ def create_sell_request():
 
     # Normalize fields (support both old and new names)
     broker_id = data.get('broker_id') or data.get('brokerId')
-    quantity = data.get('quantity') or data.get('estimatedQuantity')
-    variety = data.get('variety') or data.get('cropVariety')
+    quantity = data.get('quantity') or data.get('quantity_tons') or data.get('estimatedQuantity')
+    variety = data.get('variety') or data.get('mango_variety') or data.get('cropVariety')
     date_str = data.get('date') or data.get('preferredDeliveryDate') or data.get('preferred_date')
 
     required_fields = [broker_id, quantity, variety, date_str]
@@ -1685,6 +1719,7 @@ def create_sell_request():
         # Capture the current market price for this variety (per kg) to lock-in buyer's request price
         market_price = MarketPrice.query.filter_by(broker_id=broker_int, mango_variety=str(variety)).order_by(_desc(MarketPrice.updated_at)).first()
         price_at_request = float(market_price.price_per_kg) if market_price else None
+        order_commission = float(broker_obj.market_commission or 0)
 
         # Cast to str() to satisfy static typing expectations
         sell_request = SellRequest(
@@ -1694,6 +1729,7 @@ def create_sell_request():
             variety=str(variety),
             preferred_date=pref_date,
             price_at_request=price_at_request,
+            order_commission=order_commission,
             status='PENDING'
         )
 
@@ -1781,6 +1817,8 @@ def farmer_dashboard():
                 'expected_delivery_date': req.expected_delivery_date.strftime('%Y-%m-%d') if req.expected_delivery_date else None,
                 'agreed_price': float(req.agreed_price) if req.agreed_price is not None else None,
                 'price_at_request': float(req.price_at_request) if req.price_at_request is not None else None,
+                'order_commission': float(req.order_commission or 0),
+                'market_commission': float(req.order_commission or 0),
                 'price_locked': bool(req.price_locked),
                 'rejection_reason': req.rejection_reason,
                 'transaction': req.transaction.to_dict() if hasattr(req, 'transaction') and req.transaction else None
@@ -1798,6 +1836,7 @@ def farmer_dashboard():
 
 
 @farmer_bp.route('/requests', methods=['GET'])
+@farmer_bp.route('/my-requests', methods=['GET'])
 def get_farmer_requests():
     farmer = get_current_farmer()
     if not farmer:
@@ -1827,6 +1866,8 @@ def get_farmer_requests():
                 'broker_name': broker_name,
                 'market_location': market_location,
                 'order_id': req.order_id,
+                'order_commission': float(req.order_commission or 0),
+                'market_commission': float(req.order_commission or 0),
                 'rejection_reason': req.rejection_reason,
                 'expected_delivery_date': req.expected_delivery_date.strftime('%Y-%m-%d') if req.expected_delivery_date else None
             })
@@ -1840,6 +1881,7 @@ def get_farmer_requests():
 
 
 @farmer_bp.route('/accepted', methods=['GET'])
+@farmer_bp.route('/accepted-requests', methods=['GET'])
 def get_farmer_accepted_requests():
     farmer = get_current_farmer()
     if not farmer:
@@ -1855,6 +1897,8 @@ def get_farmer_accepted_requests():
                 'variety': req.variety,
                 'quantity_tons': float(req.quantity_tons) if req.quantity_tons is not None else None,
                 'agreed_price': float(req.agreed_price) if req.agreed_price is not None else (float(req.price_at_request) if req.price_at_request is not None else None),
+                'order_commission': float(req.order_commission or 0),
+                'market_commission': float(req.order_commission or 0),
                 'market_name': req.broker.market_name if getattr(req.broker, 'market_name', None) else None,
                 'expected_delivery_date': req.expected_delivery_date.strftime('%Y-%m-%d') if req.expected_delivery_date else None,
                 'order_id': req.order_id
@@ -1891,6 +1935,10 @@ def get_farmer_weighments():
                 const_total = float(transaction.total_cost) if transaction and transaction.total_cost is not None else (float(w.actual_weight_tons) * float(w.final_price_per_kg) * 1000 if w.actual_weight_tons is not None and w.final_price_per_kg is not None else None)
             except Exception:
                 const_total = None
+            commission_source = request_obj or w.broker
+            commission_info = calculate_market_commission(const_total or 0, commission_source)
+            commission_value = float(transaction.commission) if transaction and transaction.commission is not None else commission_info['commission']
+            net_payable = float(transaction.net_payable) if transaction and transaction.net_payable is not None else commission_info['net_payable']
 
             data.append({
                 'id': w.id,
@@ -1902,8 +1950,11 @@ def get_farmer_weighments():
                 'weighment_date': w.weighment_date.strftime('%Y-%m-%d') if w.weighment_date else None,
                 'final_weight_tons': float(w.actual_weight_tons) if w.actual_weight_tons is not None else None,
                 'final_price_per_kg': float(w.final_price_per_kg) if w.final_price_per_kg is not None else None,
-                'commission': float(transaction.commission) if transaction and transaction.commission is not None else None,
+                'market_commission': commission_info['commission_rate'],
+                'commission_rate': commission_info['commission_rate'],
+                'commission': commission_value,
                 'total_amount': const_total,
+                'net_payable': net_payable,
                 'payment_status': w.payment_status or (transaction.payment_status if transaction else 'PENDING')
             })
 
@@ -1958,11 +2009,17 @@ def get_farmer_payments():
         for w in weighments:
             if not (w.upi_transaction_id or w.payment_proof):
                 continue
+            gross_amount = (float(w.actual_weight_tons) * float(w.final_price_per_kg) * 1000) if w.actual_weight_tons is not None and w.final_price_per_kg is not None else 0
+            request_obj = SellRequest.query.get(w.sell_request_id) if w.sell_request_id else None
+            commission_info = calculate_market_commission(gross_amount, request_obj or w.broker)
             payments.append({
                 'transaction_id': f'w-{w.id}',
                 'upi_transaction_id': w.upi_transaction_id,
                 'payment_date': w.created_at.strftime('%Y-%m-%d') if w.created_at else None,
-                'total_amount_debited': (float(w.actual_weight_tons) * float(w.final_price_per_kg) * 1000) if w.actual_weight_tons is not None and w.final_price_per_kg is not None else None,
+                'total_amount': commission_info['total_amount'],
+                'market_commission': commission_info['commission_rate'],
+                'commission': commission_info['commission'],
+                'total_amount_debited': commission_info['net_payable'],
                 'market_name': w.broker.market_name if getattr(w.broker, 'market_name', None) else None,
                 'order_id': w.order_id,
                 'variety': w.mango_variety,
@@ -2397,6 +2454,7 @@ def get_broker_dashboard():
                 'expected_delivery_date': sr.expected_delivery_date.isoformat() if sr.expected_delivery_date else None,
                 'agreed_price': float(sr.agreed_price) if sr.agreed_price is not None else None,
                 'price_at_request': float(sr.price_at_request) if sr.price_at_request is not None else None,
+                'order_commission': float(sr.order_commission or 0),
                 'price_locked': bool(sr.price_locked),
                 'created_at': sr.created_at.isoformat()
             })
@@ -2438,6 +2496,7 @@ def get_broker_dashboard():
             'broker': {
                 'id': broker.id,
                 'market_name': broker.market_name,
+                'market_commission': float(broker.market_commission or 0),
                 'place': place_obj
             },
             'sell_requests': sell_requests_data,
@@ -2494,6 +2553,7 @@ def broker_get_profile():
                 'district': place.district if place else 'N/A',
                 'market_area': place.market_area if place else 'N/A',
                 'platform_fee_paid': broker.platform_fee_paid,
+                'market_commission': float(broker.market_commission or 0),
                 'registration_date': broker.registration_date.isoformat() if broker.registration_date else None
             }
         }
@@ -2503,6 +2563,53 @@ def broker_get_profile():
         return jsonify({
             'success': False,
             'message': 'Failed to load profile',
+            'error': str(e)
+        }), 500
+
+
+@broker_bp.route('/commission', methods=['POST'])
+def update_market_commission():
+    """
+    Update the broker's market commission rate per 100 rupees. This value
+    represents all market charges such as coolie, shop rent and platform fee.
+    """
+    broker = get_current_broker()
+    if not broker:
+        return jsonify({
+            'success': False,
+            'error': 'Unauthorized'
+        }), 401
+
+    data = request.get_json() or {}
+
+    try:
+        commission = float(data.get('market_commission', 0))
+    except (TypeError, ValueError):
+        return jsonify({
+            'success': False,
+            'message': 'Please enter a valid commission per 100 rupees'
+        }), 400
+
+    if commission < 0 or commission > 100:
+        return jsonify({
+            'success': False,
+            'message': 'Commission must be between 0 and 100 rupees per 100 rupees'
+        }), 400
+
+    try:
+        broker.market_commission = commission
+        db.session.commit()
+        return jsonify({
+            'success': True,
+            'message': 'Market commission per 100 rupees updated successfully',
+            'market_commission': float(broker.market_commission or 0)
+        }), 200
+    except Exception as e:
+        db.session.rollback()
+        print('Market commission update error:', str(e))
+        return jsonify({
+            'success': False,
+            'message': 'Failed to update market commission',
             'error': str(e)
         }), 500
 
@@ -2739,6 +2846,8 @@ def _broker_accept_sell_request(
         order_id = f"ORD-{int(datetime.utcnow().timestamp())}-{sell_request.id}"
 
         sell_request.order_id = order_id
+        if sell_request.order_commission is None:
+            sell_request.order_commission = float(broker.market_commission or 0)
 
         # Allow broker to override agreed price at acceptance time (payload.agreed_price is expected in ₹/kg)
         if override_price is not None:
@@ -3179,7 +3288,8 @@ def process_payment():
             if weighment.broker_id != broker.id:
                 return jsonify({'success': False, 'error': 'Unauthorized access to weighment'}), 403
 
-            calculated_amount = (weighment.actual_weight_tons or 0) * 1000 * (weighment.final_price_per_kg or 0)
+            gross_amount = (weighment.actual_weight_tons or 0) * 1000 * (weighment.final_price_per_kg or 0)
+            calculated_amount = calculate_market_commission(gross_amount, weighment.sell_request or weighment.broker)['net_payable']
             weighment.payment_status = 'PAID'
             db.session.commit()
 
@@ -3310,8 +3420,12 @@ def get_payment_details(transaction_id: str):
             
             farmer_id = weighment.farmer_id
             order_id = weighment.order_id
-            # Calculate amount: weight in tons * 1000 * price per kg
-            amount = (weighment.actual_weight_tons or 0) * 1000 * (weighment.final_price_per_kg or 0)
+            gross_amount = (weighment.actual_weight_tons or 0) * 1000 * (weighment.final_price_per_kg or 0)
+            commission_info = calculate_market_commission(gross_amount, weighment.sell_request or weighment.broker)
+            amount = commission_info['net_payable']
+            commission_rate = commission_info['commission_rate']
+            commission_amount = commission_info['commission']
+            net_payable = commission_info['net_payable']
         else:
             # Fetch from Transaction table
             transaction = Transaction.query.get(tx_id)
@@ -3325,6 +3439,10 @@ def get_payment_details(transaction_id: str):
             
             farmer_id = sell_request.farmer_id
             order_id = sell_request.order_id
+            gross_amount = float(transaction.total_cost or 0)
+            commission_rate = float(sell_request.order_commission or 0) if sell_request else 0
+            commission_amount = float(transaction.commission or 0)
+            net_payable = float(transaction.net_payable or 0)
             amount = float(transaction.net_payable or 0)
 
         # Fetch farmer details including UPI ID
@@ -3346,6 +3464,10 @@ def get_payment_details(transaction_id: str):
             'phone': phone or '-',
             'upi_id': upi_id or '-',
             'order_id': order_id or '-',
+            'gross_amount': round(gross_amount, 2),
+            'commission_rate': commission_rate,
+            'commission': round(commission_amount, 2),
+            'net_payable': round(net_payable, 2),
             'amount': round(amount, 2)
         }
 
@@ -3422,13 +3544,15 @@ def mark_payment_initiated():
                 return jsonify({'success': False, 'error': 'Unauthorized'}), 403
             
             # Update payment status to INITIATED
+            gross_amount = (weighment.actual_weight_tons or 0) * 1000 * (weighment.final_price_per_kg or 0)
+            net_amount = calculate_market_commission(gross_amount, weighment.sell_request or weighment.broker)['net_payable']
             weighment.payment_status = 'INITIATED'
             db.session.commit()
             
             # Log audit
             try:
                 log_audit(broker.user_id, 'UPI_PAYMENT_INITIATED', 
-                        f"WeighmentID: {tx_id}, Amount: {(weighment.actual_weight_tons or 0) * 1000 * (weighment.final_price_per_kg or 0)}")
+                        f"WeighmentID: {tx_id}, Amount: {net_amount}")
             except Exception:
                 pass
             
@@ -3530,6 +3654,8 @@ def submit_upi_transaction():
             if (existing_txn is not None) or (existing_wgt is not None and existing_wgt.id != weighment_id):
                 return jsonify({'success': False, 'error': duplicate_error}), 400
 
+            gross_amount = (weighment.actual_weight_tons or 0) * 1000 * (weighment.final_price_per_kg or 0)
+            net_amount = calculate_market_commission(gross_amount, weighment.sell_request or weighment.broker)['net_payable']
             weighment.upi_transaction_id = upi_transaction_id
             weighment.payment_status = 'AWAITING_VERIFICATION'
             if proof_rel_path:
@@ -3538,7 +3664,7 @@ def submit_upi_transaction():
 
             try:
                 log_audit(broker.user_id, 'UPI_PAYMENT_SUBMITTED', 
-                          f"WeighmentID: {weighment_id}, Amount: {(weighment.actual_weight_tons or 0) * 1000 * (weighment.final_price_per_kg or 0)}, UPI_TXN: {upi_transaction_id}")
+                          f"WeighmentID: {weighment_id}, Amount: {net_amount}, UPI_TXN: {upi_transaction_id}")
             except Exception:
                 pass
 

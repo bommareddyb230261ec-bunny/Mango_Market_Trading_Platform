@@ -3,18 +3,22 @@ Host Verification Routes
 Routes for host/platform owner to verify broker trade licenses
 """
 
+from datetime import datetime
+
 from flask import Blueprint, request, jsonify
 
 try:
     # Try importing from backend context
-    from backend.main import db, Broker, User, Place, Transaction, Weighment, Farmer, SellRequest
+    from backend.main import db, Broker, User, Place, Transaction, Weighment, Farmer, SellRequest, calculate_market_commission, safe_decrypt
+    from backend.email_service import send_payment_verified_email
 except (ImportError, ModuleNotFoundError):
     # Fallback for direct module import
     try:
         import sys
         import os
         sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        from main import db, Broker, User, Place, Transaction, Weighment, Farmer, SellRequest
+        from main import db, Broker, User, Place, Transaction, Weighment, Farmer, SellRequest, calculate_market_commission, safe_decrypt
+        from email_service import send_payment_verified_email
     except (ImportError, ModuleNotFoundError):
         # Last resort - import what we can
         from main import db
@@ -29,6 +33,66 @@ host_bp = Blueprint('host', __name__)
 # Note: Host password is stored as plaintext for simplicity
 # In production, this should be hashed and stored securely
 HOST_PASSWORD = "Charan.56"
+
+
+def _send_payment_verified_email_for_record(record, is_weighment: bool) -> bool:
+    """Send farmer email after host approval. Email failures must not block approval."""
+    try:
+        if is_weighment:
+            weighment = record
+            sell_request = weighment.sell_request if getattr(weighment, 'sell_request', None) else None
+            farmer = Farmer.query.get(weighment.farmer_id) if weighment.farmer_id else None
+            broker = weighment.broker if getattr(weighment, 'broker', None) else None
+            total_amount = (float(weighment.actual_weight_tons or 0) * 1000 * float(weighment.final_price_per_kg or 0))
+            calc = calculate_market_commission(total_amount, sell_request or broker)
+            market_name = broker.market_name if broker and getattr(broker, 'market_name', None) else 'Market'
+            order_id = weighment.order_id or (sell_request.order_id if sell_request else '-')
+            variety = weighment.mango_variety or (sell_request.variety if sell_request else '-')
+            upi_transaction_id = weighment.upi_transaction_id or '-'
+            payment_record_date = weighment.created_at
+        else:
+            transaction = record
+            sell_request = transaction.sell_request
+            farmer = Farmer.query.get(sell_request.farmer_id) if sell_request else None
+            broker = sell_request.broker if sell_request and getattr(sell_request, 'broker', None) else None
+            total_amount = float(transaction.total_cost or 0)
+            calc = {
+                'total_amount': total_amount,
+                'commission_rate': float(sell_request.order_commission or 0) if sell_request else 0,
+                'commission': float(transaction.commission or 0),
+                'net_payable': float(transaction.net_payable or 0)
+            }
+            market_name = broker.market_name if broker and getattr(broker, 'market_name', None) else 'Market'
+            order_id = sell_request.order_id if sell_request else '-'
+            variety = sell_request.variety if sell_request else '-'
+            upi_transaction_id = transaction.upi_transaction_id or '-'
+            payment_record_date = transaction.transaction_date
+
+        if not farmer or not getattr(farmer, 'user', None) or not farmer.user.email:
+            return False
+
+        upi_id = safe_decrypt(farmer.upi_id) if getattr(farmer, 'upi_id', None) else '-'
+        payment_date = payment_record_date.strftime('%d-%b-%Y %I:%M %p') if payment_record_date else '-'
+        verified_date = datetime.now().strftime('%d-%b-%Y %I:%M %p')
+
+        return send_payment_verified_email(
+            farmer_email=farmer.user.email,
+            farmer_name=farmer.user.name or 'Farmer',
+            market_name=market_name,
+            order_id=order_id or '-',
+            mango_variety=variety or '-',
+            total_amount=float(calc['total_amount']),
+            commission_rate=float(calc['commission_rate']),
+            commission_amount=float(calc['commission']),
+            credited_amount=float(calc['net_payable']),
+            upi_transaction_id=upi_transaction_id,
+            upi_id=upi_id or '-',
+            payment_date=payment_date,
+            verified_date=verified_date
+        )
+    except Exception as email_exc:
+        print(f"[Payment Email Error] {email_exc}")
+        return False
 
 
 @host_bp.route('/verify-password', methods=['POST'])
@@ -220,7 +284,10 @@ def get_pending_payments():
                 if farmer:
                     user = User.query.get(farmer.user_id)
 
-            amount = (weighment.actual_weight_tons or 0) * 1000 * (weighment.final_price_per_kg or 0)
+            amount = calculate_market_commission(
+                (weighment.actual_weight_tons or 0) * 1000 * (weighment.final_price_per_kg or 0),
+                weighment.sell_request or weighment.broker
+            )['net_payable']
             payments.append({
                 'transaction_id': f'w-{weighment.id}',
                 'type': 'weighment',
@@ -268,10 +335,14 @@ def approve_payment(transaction_id: str):
             if not weighment:
                 return jsonify({'success': False, 'message': 'Weighment not found'}), 404
 
+            already_paid = str(weighment.payment_status or '').upper() == 'PAID'
             weighment.payment_status = 'PAID'
             db.session.commit()
+            email_sent = False
+            if not already_paid:
+                email_sent = _send_payment_verified_email_for_record(weighment, True)
 
-            return jsonify({'success': True, 'message': 'Weighment payment approved', 'transaction_id': f'w-{record_id}'}), 200
+            return jsonify({'success': True, 'message': 'Weighment payment approved', 'transaction_id': f'w-{record_id}', 'email_sent': email_sent}), 200
 
         try:
             record_id = int(transaction_id)
@@ -282,10 +353,14 @@ def approve_payment(transaction_id: str):
         if not transaction:
             return jsonify({'success': False, 'message': 'Transaction not found'}), 404
 
+        already_paid = str(transaction.payment_status or '').upper() == 'PAID'
         transaction.payment_status = 'PAID'
         db.session.commit()
+        email_sent = False
+        if not already_paid:
+            email_sent = _send_payment_verified_email_for_record(transaction, False)
 
-        return jsonify({'success': True, 'message': 'Transaction payment approved', 'transaction_id': record_id}), 200
+        return jsonify({'success': True, 'message': 'Transaction payment approved', 'transaction_id': record_id, 'email_sent': email_sent}), 200
 
     except Exception as e:
         db.session.rollback()

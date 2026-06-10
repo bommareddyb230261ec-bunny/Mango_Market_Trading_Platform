@@ -3,178 +3,271 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Farmer Dashboard | Mango Market Platform</title>
+    <title>Farmer Dashboard | Mango Market Trading Platform</title>
     <link rel="stylesheet" href="../css/farmer.css">
-    <style>
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); align-items: center; justify-content: center; }
-        .modal.show { display: flex; }
-        .modal-content { background-color: #fff; padding: 30px; border-radius: 12px; width: 400px; max-width: 90%; box-shadow: 0 10px 40px rgba(0,0,0,0.2); animation: slideIn 0.3s ease; }
-        @keyframes slideIn { from { opacity: 0; transform: translateY(-30px); } to { opacity: 1; transform: translateY(0); } }
-        .close-modal { float: right; font-size: 28px; font-weight: bold; cursor: pointer; color: #999; transition: color 0.2s; }
-        .close-modal:hover { color: #333; }
-        .panel-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-            gap: 20px;
-            margin-bottom: 40px;
-        }
-        .card-link {
-            display: block;
-            background: #fff;
-            border-radius: 12px;
-            padding: 24px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            border: 1px solid transparent;
-            transition: all 0.2s ease;
-            text-decoration: none;
-            color: inherit;
-        }
-        .card-link:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
-            border-color: #e0e0e0;
-        }
-        .card-link h3 {
-            margin-bottom: 8px;
-            color: #2e7d32;
-            font-size: 1.2rem;
-        }
-        .card-link p {
-            color: #666;
-            font-size: 0.9rem;
-        }
-        @media (max-width:700px) {
-            .modal-content { width: 90%; padding: 25px; }
-        }
-    </style>
+    <script src="../js/api.js"></script>
+    <script src="../js/auth.js"></script>
 </head>
 <body>
-
-    <header>
-        <div class="container nav-wrapper">
-            <div class="brand">
-                <h1>Mango Market <span>Farmer Portal</span></h1>
+    <aside class="sidebar" id="sidebar">
+        <div class="brand">
+            <div class="brand-mark">MM</div>
+            <div>
+                <h1>Mango Market</h1>
+                <p>Farmer Portal</p>
             </div>
-            <nav class="nav-links">
-                <span id="welcomeUser">Welcome, Farmer</span>
-                <a href="farmer_profile.html" id="profileBtn"><span class="profile-icon">👤</span> Profile</a>
-                <a href="#" id="logoutBtn">Logout</a>
-            </nav>
-        </div>
-    </header>
-
-    <main class="container content-layout">
-        <div class="tab-nav">
-            <a href="farmer_dashboard.html" class="tab-btn active" data-icon="🛒">
-                <span class="tab-icon">🛒</span>
-                <span class="tab-label">Find Markets</span>
-            </a>
-            <a href="farmer/my_requests.html" class="tab-btn" data-icon="📝">
-                <span class="tab-icon">📝</span>
-                <span class="tab-label">My Requests</span>
-            </a>
-            <a href="farmer/accepted_requests.html" class="tab-btn" data-icon="✅">
-                <span class="tab-icon">✅</span>
-                <span class="tab-label">Accepted Requests</span>
-            </a>
-            <a href="farmer/weighment.html" class="tab-btn" data-icon="⚖️">
-                <span class="tab-icon">⚖️</span>
-                <span class="tab-label">Weighment</span>
-            </a>
-            <a href="farmer/payments.html" class="tab-btn" data-icon="💰">
-                <span class="tab-icon">💰</span>
-                <span class="tab-label">Payments</span>
-            </a>
+            <button class="icon-btn mobile-only" id="closeSidebarBtn" type="button" aria-label="Close menu">x</button>
         </div>
 
-        <section class="search-container">
-            <h2>Find Buyers & Markets Near You</h2>
-            <form id="searchForm" class="search-form">
-                <select id="locationSelect" class="search-select" required>
-                    <option value="" disabled selected>Loading locations...</option>
-                </select>
-                <button type="submit" class="btn-primary">Search Markets</button>
-            </form>
-        </section>
+        <nav class="side-nav" aria-label="Farmer navigation">
+            <button class="nav-item active" type="button" data-section="overview">
+                <span class="nav-icon">🛒</span>
+                <span>Find Markets</span>
+            </button>
+            <a class="nav-item" href="farmer/my_requests.html">
+                <span class="nav-icon">📝</span>
+                <span>My Requests</span>
+                <span class="nav-badge" id="requestBadge">0</span>
+            </a>
+            <a class="nav-item" href="farmer/accepted_requests.html">
+                <span class="nav-icon">✅</span>
+                <span>Accepted Requests</span>
+            </a>
+            <a class="nav-item" href="farmer/weighment.html">
+                <span class="nav-icon">⚖️</span>
+                <span>Weighment</span>
+            </a>
+            <a class="nav-item" href="farmer/payments.html">
+                <span class="nav-icon">💰</span>
+                <span>Payments</span>
+            </a>
+        </nav>
 
-        <div id="allVarietiesContainer" style="margin-top:16px;"> 
-            <!-- Populated with aggregate varieties available in selected district -->
+        <div class="sidebar-footer">
+            <a href="farmer_profile.html" class="profile-link">Profile</a>
+            <button type="button" class="logout-btn" id="logoutBtn">Logout</button>
         </div>
+    </aside>
 
-        <div class="market-list-header">
-            <h3>Available Markets</h3>
-            <div class="sort-controls">
-                <label>Sort by:</label>
-                <select id="priceSort" class="sort-select">
-                    <option value="price_desc">Price: High → Low</option>
-                    <option value="price_asc">Price: Low → High</option>
-                </select>
+    <div class="app-shell">
+        <header class="topbar">
+            <button class="icon-btn mobile-only" id="openSidebarBtn" type="button" aria-label="Open menu">=</button>
+            <div>
+                <p class="eyebrow">Marketplace</p>
+                <h2 id="pageTitle">Find Markets</h2>
             </div>
-        </div>
+            <div class="farmer-chip">
+                <span id="farmerName">Farmer</span>
+                <span class="avatar">F</span>
+            </div>
+        </header>
 
-        <div id="marketListContainer" class="market-listings">
-            <div class="empty-state"><p>Select a location to view live prices.</p></div>
-        </div>
+        <main class="content">
+            <section class="view active" id="overviewView">
+                <div class="summary-grid">
+                    <article class="metric-card">
+                        <span class="metric-label">Markets Found</span>
+                        <strong id="marketsCount">0</strong>
+                    </article>
+                    <article class="metric-card urgent">
+                        <span class="metric-label">Active Requests</span>
+                        <strong id="activeRequests">0</strong>
+                    </article>
+                    <article class="metric-card">
+                        <span class="metric-label">Accepted Orders</span>
+                        <strong id="acceptedOrders">0</strong>
+                    </article>
+                    <article class="metric-card">
+                        <span class="metric-label">Pending Payments</span>
+                        <strong id="pendingPayments">₹0</strong>
+                    </article>
+                </div>
 
-    </main>
+                <div class="work-grid">
+                    <article class="panel search-panel">
+                        <div class="panel-header">
+                            <div>
+                                <h3>Find Buyers & Markets</h3>
+                                <p>Search for market yards offering the best prices.</p>
+                            </div>
+                        </div>
+                        <form id="searchForm" class="search-form-inline">
+                            <label for="locationSelect">Select Location</label>
+                            <select id="locationSelect" required>
+                                <option value="">Loading locations...</option>
+                            </select>
+                            <button type="submit" class="btn primary">Search Markets</button>
+                        </form>
+                    </article>
 
-    <div id="sellModal" class="modal">
-        <div class="modal-content">
-            <span class="close-modal">&times;</span>
-            <h3>Send Sell Request</h3>
-            <p>Market: <strong id="modalMarketName"></strong></p>
-            <form id="sellRequestForm">
-                <input type="hidden" id="modalMarketId">
-                
-                <div class="form-group">
-                    <label>Mango Variety</label>
-                    <select id="mangoVariety" required style="width:100%; padding:8px; margin-bottom:6px;">
+                    <article class="panel">
+                        <div class="panel-header">
+                            <div>
+                                <h3>Today's Tasks</h3>
+                                <p>Quick access to frequently used actions.</p>
+                            </div>
+                        </div>
+                        <div class="task-list">
+                            <button class="task-item" type="button" onclick="window.location.href='farmer/my_requests.html'">
+                                <span>Check pending requests</span>
+                                <strong id="myRequestsCount">0</strong>
+                            </button>
+                            <button class="task-item" type="button" onclick="window.location.href='farmer/accepted_requests.html'">
+                                <span>View accepted orders</span>
+                                <strong id="acceptedCount">0</strong>
+                            </button>
+                            <button class="task-item" type="button" onclick="window.location.href='farmer/payments.html'">
+                                <span>Payment status</span>
+                                <strong>Open</strong>
+                            </button>
+                        </div>
+                    </article>
+                </div>
+
+                <article class="panel">
+                    <div class="panel-header">
+                        <div>
+                            <h3>Available Markets</h3>
+                            <p>Browse market yards in your district with live prices.</p>
+                        </div>
+                    </div>
+                    <div class="market-list-header">
+                        <div class="sort-controls">
+                            <label for="priceSort">Sort by:</label>
+                            <select id="priceSort" class="sort-select">
+                                <option value="price_desc">Price: High → Low</option>
+                                <option value="price_asc">Price: Low → High</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="marketListContainer" class="market-listings"></div>
+                </article>
+            </section>
+
+            <section class="view" id="my-requestsView">
+                <div class="section-heading">
+                    <div>
+                        <h2>My Sell Requests</h2>
+                        <p>Track all requests you have sent to market yards.</p>
+                    </div>
+                </div>
+
+                <article class="panel">
+                    <div class="table-wrap">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Market Yard</th>
+                                    <th>Variety</th>
+                                    <th>Quantity</th>
+                                    <th>Preferred Date</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="myRequestsTableBody">
+                                <tr><td colspan="6" class="empty-table">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </article>
+            </section>
+
+            <section class="view" id="acceptedView">
+                <div class="section-heading">
+                    <div>
+                        <h2>Accepted Requests</h2>
+                        <p>Orders that have been accepted by market yards. Ready for weighment and delivery.</p>
+                    </div>
+                </div>
+
+                <article class="panel">
+                    <div class="table-wrap">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Market Yard</th>
+                                    <th>Variety</th>
+                                    <th>Quantity</th>
+                                    <th>Agreed Price</th>
+                                    <th>Delivery Date</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="acceptedTableBody">
+                                <tr><td colspan="6" class="empty-table">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </article>
+            </section>
+        </main>
+    </div>
+
+    <div id="sellModal" class="modal" aria-hidden="true">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>Send Sell Request</h3>
+                <button class="icon-btn" type="button" data-close-modal="sellModal">x</button>
+            </div>
+            <div class="modal-body">
+                <dl class="request-summary">
+                    <div><dt>Market</dt><dd id="sellMarketName">-</dd></div>
+                </dl>
+                <form id="sellForm" class="stack-form">
+                    <input type="hidden" id="sellMarketId">
+                    
+                    <label for="mangoVariety">Mango Variety</label>
+                    <select id="mangoVariety" required>
                         <option value="">Select variety...</option>
                     </select>
-                    <div id="selectedPricePreview" style="font-size:0.95rem; color:#2e7d32; margin-top:6px;"></div>
-                </div>
+                    <div id="selectedPricePreview"></div>
 
-                <div class="form-group">
-                    <label>Quantity (Tons)</label> <input type="number" id="quantity" step="0.1" required style="width:100%; padding:8px; margin-bottom:10px;">
-                </div>
+                    <label for="quantity">Quantity (Tons)</label>
+                    <input type="number" id="quantity" step="0.1" min="0" required placeholder="Enter quantity">
 
-                <div class="form-group">
-                    <label>Preferred Delivery Date</label> <input type="date" id="sellDate" required style="width:100%; padding:8px; margin-bottom:10px;" min="">
-                </div>
+                    <label for="sellDate">Preferred Delivery Date</label>
+                    <input type="date" id="sellDate" required>
 
-                <button type="submit" class="btn-primary" style="width:100%;">Submit Request</button>
-            </form>
+                    <div class="modal-actions">
+                        <button class="btn success" type="submit">Submit Request</button>
+                        <button class="btn secondary" type="button" data-close-modal="sellModal">Cancel</button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 
-    <!-- Success Modal -->
-    <div id="successModal" class="modal">
-        <div class="modal-content" style="text-align: center; max-width: 450px;">
-            <span class="close-modal" onclick="document.getElementById('successModal').classList.remove('show')">&times;</span>
-            <h3 style="color: #4caf50; margin-bottom: 1rem;">✅ Success</h3>
-            <p id="successMessage" style="font-size: 1.1rem; color: #333; margin-bottom: 2rem;">Sell request submitted successfully</p>
-            <button onclick="document.getElementById('successModal').classList.remove('show'); loadDashboard();" style="background: #4caf50; color: white; border: none; padding: 12px 24px; border-radius: 6px; font-size: 1rem; cursor: pointer; font-weight: 600;">OK</button>
+    <div id="successModal" class="modal" aria-hidden="true">
+        <div class="modal-card small">
+            <div class="modal-header">
+                <h3>Success</h3>
+                <button class="icon-btn" type="button" data-close-modal="successModal">x</button>
+            </div>
+            <div class="modal-body">
+                <p id="successMessage">Request submitted successfully!</p>
+                <div class="modal-actions">
+                    <button class="btn primary" type="button" data-close-modal="successModal">OK</button>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- Error Modal -->
-    <div id="errorModal" class="modal">
-        <div class="modal-content" style="text-align: center; max-width: 450px;">
-            <span class="close-modal" onclick="document.getElementById('errorModal').classList.remove('show')">&times;</span>
-            <h3 style="color: #d32f2f; margin-bottom: 1rem;">❌ Error</h3>
-            <p id="errorMessage" style="font-size: 1rem; color: #333; margin-bottom: 2rem; word-wrap: break-word;"></p>
-            <button onclick="document.getElementById('errorModal').classList.remove('show');" style="background: #d32f2f; color: white; border: none; padding: 12px 24px; border-radius: 6px; font-size: 1rem; cursor: pointer; font-weight: 600;">Close</button>
+    <div id="errorModal" class="modal" aria-hidden="true">
+        <div class="modal-card small">
+            <div class="modal-header">
+                <h3>Error</h3>
+                <button class="icon-btn" type="button" data-close-modal="errorModal">x</button>
+            </div>
+            <div class="modal-body">
+                <p id="errorMessage">An error occurred.</p>
+                <div class="modal-actions">
+                    <button class="btn secondary" type="button" data-close-modal="errorModal">Close</button>
+                </div>
+            </div>
         </div>
     </div>
-
-    <footer>
-        <div class="container">
-            <p>&copy; 2026 Mango Market Trading Platform</p>
-        </div>
-    </footer>
-
-    <script src="../js/api.js"></script>
-    <script src="../js/farmer.js"></script>
+    <script src="../js/farmer_dashboard.js" defer></script>
 </body>
 </html>
  

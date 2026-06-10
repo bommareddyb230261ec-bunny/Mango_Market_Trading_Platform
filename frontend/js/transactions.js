@@ -57,7 +57,11 @@ const TransactionManager = {
 
             // Include weighments (if present) by converting them into transaction-like objects
             if (Array.isArray(data.weighments)) {
-                const wAsTx = data.weighments.map(w => ({
+                const wAsTx = data.weighments.map(w => {
+                    const totalCost = (typeof w.total_cost === 'number') ? w.total_cost : ((w.actual_weight_tons || 0) * 1000 * (w.final_price_per_kg || 0));
+                    const commission = (typeof w.commission === 'number') ? w.commission : 0;
+                    const netPayable = (typeof w.net_payable === 'number') ? w.net_payable : Math.max(totalCost - commission, 0);
+                    return {
                     id: `w-${w.id}`,
                     request_id: w.sell_request_id || null,
                     farmer_id: w.farmer_id || null,
@@ -66,16 +70,17 @@ const TransactionManager = {
                     date: w.weighment_date || w.created_at,
                     actual_weight: (w.actual_weight_tons || 0),
                     market_price_at_sale: (w.final_price_per_kg || 0),
-                    total_cost: ((w.actual_weight_tons || 0) * 1000 * (w.final_price_per_kg || 0)),
-                    commission: 0,
-                    net_payable: ((w.actual_weight_tons || 0) * 1000 * (w.final_price_per_kg || 0)),
+                    total_cost: totalCost,
+                    commission: commission,
+                    net_payable: netPayable,
                     payment_status: w.payment_status || 'PENDING',
                     upi_transaction_id: w.upi_transaction_id || null,
                     payment_proof_url: w.payment_proof_url || null,
                     order_id: w.order_id || null,
                     market_name: w.market_name || null,
                     _is_weighment: true
-                }));
+                    };
+                });
                 this.allTransactions = [...this.allTransactions, ...wAsTx];
             }
 

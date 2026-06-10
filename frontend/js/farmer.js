@@ -256,6 +256,8 @@ document.addEventListener('DOMContentLoaded', () => {
             // Render a richer market card with broker info and varieties
             const city = m.city || m.market_area || '';
             const district = m.district || '';
+            const commissionRate = Number(m.market_commission || 0);
+            const commissionText = `\u20b9${commissionRate.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} per \u20b9100`;
 
             // Build variety chips (use `varieties` if provided, otherwise fall back to `prices`)
             const varietyList = (m.varieties && m.varieties.length > 0)
@@ -282,6 +284,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <p style="margin:4px 0; color:#555;"><strong>Broker:</strong> ${m.broker_name || '-'}</p>
                         <p style="margin:4px 0; color:#555;"><strong>Mobile:</strong> ${m.broker_phone || '-'}</p>
                         <p style="margin:6px 0 12px 0; color:#666; font-size:0.95rem;"><strong>Location:</strong> ${city}${city && district ? ', ' + district : (district || '')}</p>
+                        <p style="margin:6px 0 12px 0; color:#555; font-size:0.95rem;"><strong>Commission:</strong> ${commissionText}</p>
                         <div style="margin-top:6px;">
                             <strong style="display:block; margin-bottom:6px;">Varieties & Prices:</strong>
                             <div style="display:flex; gap:8px; flex-wrap:wrap;">${varietiesHtml}</div>

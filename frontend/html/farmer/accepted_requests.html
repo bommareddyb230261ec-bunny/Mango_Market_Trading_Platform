@@ -21,6 +21,7 @@
         <nav class="page-nav">
             <a href="../farmer_dashboard.html">Dashboard</a>
             <a href="my_requests.html">Requests</a>
+            <a href="accepted_requests.html" class="active">Accepted</a>
             <a href="weighment.html">Weighment</a>
             <a href="payments.html">Payments</a>
             <button id="logoutBtn" class="btn-link">Logout</button>
@@ -39,13 +40,14 @@
             <table class="dashboard-table">
                 <thead>
                     <tr>
-                        <th>Accepted Date</th>
+                        <th>Order Date</th>
                         <th>Order ID</th>
                         <th>Variety</th>
-                        <th class="amount">Quantity</th>
+                        <th class="amount">Quantity (Tons)</th>
                         <th>Market Name</th>
                         <th class="amount">Agreed Price (₹/kg)</th>
                         <th>Expected Delivery</th>
+                        <th>Action</th>
                     </tr>
                 </thead>
                 <tbody id="acceptedTableBody"></tbody>
