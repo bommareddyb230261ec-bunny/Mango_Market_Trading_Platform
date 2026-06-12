@@ -85,13 +85,33 @@ const APIClient = {
     }
 };
 
+function clearStoredAuth() {
+    localStorage.removeItem('user_id');
+    localStorage.removeItem('role');
+    localStorage.removeItem('role_id');
+    localStorage.removeItem('session_token');
+    localStorage.removeItem('farmer_token');
+    localStorage.removeItem('user_name');
+}
+
+function handleUnauthorizedResponse(response, endpoint) {
+    const authEndpoints = ['/auth/login', '/auth/register', '/auth/check-email', '/auth/check-phone', '/auth/send-otp', '/auth/verify-otp', '/auth/forgot-password', '/auth/reset-password'];
+    const isAuthFlow = authEndpoints.some(path => endpoint.startsWith(path));
+    if (response.status === 401 && !isAuthFlow) {
+        clearStoredAuth();
+        window.dispatchEvent(new CustomEvent('auth:expired', { detail: { endpoint } }));
+    }
+}
+
 // ====== REQUEST HANDLER ======
 async function apiFetch(endpoint, opts = {}) {
     const base = await _ensureApiBase();
     if (!base) {
         throw new Error(`Backend not found on ports ${API_PORT} or 8000`);
     }
-    return fetch(`${base}${endpoint}`, opts);
+    const response = await fetch(`${base}${endpoint}`, opts);
+    handleUnauthorizedResponse(response, endpoint);
+    return response;
 }
 
 async function postData(endpoint, data) {
@@ -107,6 +127,7 @@ async function postData(endpoint, data) {
             credentials: 'include',
             body: JSON.stringify(data)
         });
+        handleUnauthorizedResponse(response, endpoint);
 
         if (!response.ok) {
             let errorMsg = `Server error: ${response.status} ${response.statusText}`;

@@ -9,6 +9,8 @@ Main Flask application (Consolidated)
 import os
 import logging
 import time
+import secrets
+import hashlib
 from datetime import datetime, timezone, date
 from typing import Optional, Any, cast, List, Dict, Union, Tuple
 from dotenv import load_dotenv
@@ -197,6 +199,26 @@ class User(db.Model):
         self.role = role
         if created_at:
             self.created_at = created_at
+
+
+class UserSession(db.Model):
+    __tablename__ = 'user_sessions'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, unique=True, index=True)
+    session_id_hash = db.Column(db.String(64), nullable=False)
+    user_agent = db.Column(db.String(255), nullable=True)
+    ip_address = db.Column(db.String(45), nullable=True)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    last_seen_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+
+    user = db.relationship('User', backref=db.backref('active_session', uselist=False))
+
+    def __init__(self, user_id: int, session_id_hash: str, user_agent: Optional[str] = None, ip_address: Optional[str] = None):
+        self.user_id = user_id
+        self.session_id_hash = session_id_hash
+        self.user_agent = user_agent
+        self.ip_address = ip_address
 
 
 # ==================== PLACE MODEL ====================
@@ -856,18 +878,113 @@ def _get_serializer():
     return URLSafeTimedSerializer(Config.SECRET_KEY)
 
 
-def generate_session_token(user_id: int) -> str:
+def _hash_session_id(session_id: str) -> str:
+    return hashlib.sha256(session_id.encode('utf-8')).hexdigest()
+
+
+def _new_session_id() -> str:
+    return secrets.token_urlsafe(32)
+
+
+def _client_ip() -> Optional[str]:
+    forwarded = request.headers.get('X-Forwarded-For')
+    if forwarded:
+        return forwarded.split(',', 1)[0].strip()[:45]
+    return (request.remote_addr or '')[:45] or None
+
+
+def _issue_user_session(user: User) -> str:
+    session_id = _new_session_id()
+    now = datetime.now(timezone.utc)
+    active = UserSession.query.filter_by(user_id=user.id).first()
+    if active:
+        active.session_id_hash = _hash_session_id(session_id)
+        active.created_at = now
+        active.last_seen_at = now
+        active.user_agent = (request.headers.get('User-Agent') or '')[:255] or None
+        active.ip_address = _client_ip()
+    else:
+        active = UserSession(
+            user_id=int(user.id),
+            session_id_hash=_hash_session_id(session_id),
+            user_agent=(request.headers.get('User-Agent') or '')[:255] or None,
+            ip_address=_client_ip()
+        )
+        db.session.add(active)
+
+    session.clear()
+    session['user_id'] = user.id
+    session['role'] = user.role
+    session['session_id'] = session_id
+    session.permanent = True
+    db.session.commit()
+    return session_id
+
+
+def _is_active_session(user_id: int, session_id: Optional[str], touch: bool = True) -> bool:
+    if not user_id or not session_id:
+        return False
+    active = UserSession.query.filter_by(user_id=user_id).first()
+    if not active or active.session_id_hash != _hash_session_id(session_id):
+        return False
+    if touch:
+        active.last_seen_at = datetime.now(timezone.utc)
+        try:
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+    return True
+
+
+def generate_session_token(user_id: int, session_id: str) -> str:
     s = _get_serializer()
-    return s.dumps({'user_id': user_id})
+    return s.dumps({'user_id': user_id, 'session_id': session_id})
 
 
 def verify_session_token(token: str, max_age: int = 3600) -> Optional[int]:
     s = _get_serializer()
     try:
         data = s.loads(token, max_age=max_age)
-        return data.get('user_id')
+        user_id = data.get('user_id')
+        session_id = data.get('session_id')
+        if user_id and _is_active_session(int(user_id), session_id):
+            return int(user_id)
     except Exception:
+        pass
+    return None
+
+
+def _extract_request_token() -> Optional[str]:
+    auth_header = request.headers.get('Authorization') or request.headers.get('X-Session-Token')
+    if not auth_header:
         return None
+    return auth_header.split(' ', 1)[1] if auth_header.lower().startswith('bearer ') else auth_header
+
+
+def get_authenticated_user_id() -> Optional[int]:
+    user_id = session.get('user_id')
+    session_id = session.get('session_id')
+    if user_id and _is_active_session(int(user_id), session_id):
+        return int(user_id)
+
+    if user_id:
+        session.clear()
+
+    token = _extract_request_token()
+    if token:
+        return verify_session_token(token)
+    return None
+
+
+def invalidate_current_session() -> None:
+    user_id = session.get('user_id')
+    session_id = session.get('session_id')
+    if user_id and session_id:
+        active = UserSession.query.filter_by(user_id=user_id).first()
+        if active and active.session_id_hash == _hash_session_id(session_id):
+            db.session.delete(active)
+            db.session.commit()
+    session.clear()
 
 
 # =====================================================
@@ -1284,13 +1401,14 @@ def login():
                         'message': 'Your market is not valid on this platform.'
                     }), 403
 
-        # 4. Set Flask Session
-        session['user_id'] = user.id
-        session['role'] = user.role
+        # 4. Create the only active session for this user.
+        # Logging in from a new browser/device rotates this id and invalidates
+        # any previous cookie or fallback bearer token for the same account.
+        session_id = _issue_user_session(user)
         session['role_id'] = role_id
 
-        # 5. Generate a session token (fallback when cookies are blocked or frontend served from file://)
-        token = generate_session_token(int(user.id))
+        # 5. Generate a fallback token bound to the active server-side session.
+        token = generate_session_token(int(user.id), session_id)
 
         # 6. Return Success Response
         return jsonify({
@@ -1311,7 +1429,7 @@ def logout():
     """
     Clear user session
     """
-    session.clear()
+    invalidate_current_session()
     return jsonify({
         'success': True,
         'message': 'Logged out successfully'
@@ -1323,14 +1441,7 @@ def get_current_user():
     """
     Get current logged-in user information
     """
-    user_id = session.get('user_id')
-    if not user_id:
-        auth_header = request.headers.get('Authorization') or request.headers.get('X-Session-Token')
-        if auth_header:
-            token = auth_header.split(' ', 1)[1] if auth_header.lower().startswith('bearer ') else auth_header
-            uid = verify_session_token(token)
-            if uid:
-                user_id = uid
+    user_id = get_authenticated_user_id()
 
     if not user_id:
         return jsonify({'success': False, 'error': 'Unauthorized'}), 401
@@ -1450,14 +1561,7 @@ def get_current_farmer() -> 'Farmer | None':
     """Helper: Get Logged-in Farmer
     Accepts Flask session cookie OR a bearer token via Authorization/X-Session-Token header (dev fallback).
     """
-    user_id = session.get('user_id')
-    if not user_id:
-        auth_header = request.headers.get('Authorization') or request.headers.get('X-Session-Token')
-        if auth_header:
-            token = auth_header.split(' ', 1)[1] if auth_header.lower().startswith('bearer ') else auth_header
-            uid = verify_session_token(token)
-            if uid:
-                user_id = uid
+    user_id = get_authenticated_user_id()
 
     if not user_id:
         return None
@@ -2290,14 +2394,7 @@ def get_current_broker() -> 'Broker | None':
     """Get the current logged-in broker from session.
     Accepts cookie or bearer token via Authorization/X-Session-Token header (dev fallback).
     """
-    user_id = session.get('user_id')
-    if not user_id:
-        auth_header = request.headers.get('Authorization') or request.headers.get('X-Session-Token')
-        if auth_header:
-            token = auth_header.split(' ', 1)[1] if auth_header.lower().startswith('bearer ') else auth_header
-            uid = verify_session_token(token)
-            if uid:
-                user_id = uid
+    user_id = get_authenticated_user_id()
 
     if not user_id:
         return None
@@ -3882,14 +3979,7 @@ def get_admin_user() -> 'User | None':
     TODO: Implement proper admin authentication.
     For now, accepts any logged-in user as admin.
     """
-    user_id = session.get('user_id')
-    if not user_id:
-        auth_header = request.headers.get('Authorization') or request.headers.get('X-Session-Token')
-        if auth_header:
-            token = auth_header.split(' ', 1)[1] if auth_header.lower().startswith('bearer ') else auth_header
-            uid = verify_session_token(token)
-            if uid:
-                user_id = uid
+    user_id = get_authenticated_user_id()
 
     if not user_id:
         return None

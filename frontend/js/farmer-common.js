@@ -14,6 +14,7 @@ async function logoutUser() {
     localStorage.removeItem('user_id');
     localStorage.removeItem('role');
     localStorage.removeItem('role_id');
+    localStorage.removeItem('session_token');
     localStorage.removeItem('farmer_token');
     localStorage.removeItem('user_name');
     window.location.href = '../home.html';
