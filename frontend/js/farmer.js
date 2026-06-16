@@ -28,12 +28,26 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Modal Elements
     const sellModal = document.getElementById('sellModal');
-    const sellForm = document.getElementById('sellRequestForm');
+    const sellForm = document.getElementById('sellForm') || document.getElementById('sellRequestForm');
     const closeModalBtn = document.querySelector('.close-modal');
 
     let currentDistrict = "";
         // Map from broker_id -> market object returned by /farmer/markets
         window.MARKETS_BY_BROKER = {};
+
+    function setDashboardText(id, value) {
+        const element = document.getElementById(id);
+        if (element) element.textContent = value;
+    }
+
+    function requestStatusCount(requests, status) {
+        return requests.filter(request => String(request.status || '').toUpperCase() === status).length;
+    }
+
+    function isPendingPayment(payment) {
+        const status = String(payment.payment_status || '').toUpperCase();
+        return !['PAID', 'COMPLETED', 'VERIFIED'].includes(status);
+    }
 
     // 3. Init - Add safety checks
     if (locationSelect) {
@@ -80,6 +94,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Close events: X button, click outside, Escape key
     closeModalBtn?.addEventListener('click', () => closeSellModal());
+    document.querySelectorAll('[data-close-modal]').forEach(button => {
+        button.addEventListener('click', () => {
+            const modalId = button.getAttribute('data-close-modal');
+            if (modalId === 'sellModal') closeSellModal();
+            if (modalId === 'successModal') closeSuccessModal();
+            if (modalId === 'errorModal') closeErrorModal();
+        });
+    });
     window.addEventListener('click', (e) => { 
         if (e.target === sellModal) closeSellModal();
         if (e.target === document.getElementById('successModal')) closeSuccessModal();
@@ -226,13 +248,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 // store markets by broker id for modal population
                 window.MARKETS_BY_BROKER = {};
                 data.markets.forEach(mk => { window.MARKETS_BY_BROKER[mk.broker_id] = mk; });
+                setDashboardText('marketsCount', data.markets.length);
                 renderMarkets(data.markets);
                 renderAggregateVarieties(data.markets);
             } else {
+                setDashboardText('marketsCount', '0');
                 marketContainer.innerHTML = "<p>No markets found in this district.</p>";
             }
         } catch (e) {
             console.error("Error loading markets:", e);
+            setDashboardText('marketsCount', '0');
             marketContainer.innerHTML = `<p>Error loading markets: ${e.message}</p>`;
         }
     }
@@ -317,8 +342,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Exposed to window for the onclick in HTML
     window.openSellModal = (brokerId, name) => {
         const market = window.MARKETS_BY_BROKER[brokerId] || null;
-        document.getElementById('modalMarketId').value = brokerId;
-        document.getElementById('modalMarketName').innerText = name;
+        document.getElementById('sellMarketId').value = brokerId;
+        document.getElementById('sellMarketName').innerText = name;
 
         const varietySelect = document.getElementById('mangoVariety');
         const pricePreview = document.getElementById('selectedPricePreview');
@@ -407,7 +432,7 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         
         const payload = {
-            broker_id: document.getElementById('modalMarketId').value,
+            broker_id: document.getElementById('sellMarketId').value,
             variety: document.getElementById('mangoVariety').value,
             quantity: document.getElementById('quantity').value,
             date: document.getElementById('sellDate').value
@@ -485,8 +510,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function loadFarmerRequests() {
-        const tbody = document.getElementById('requestsTableBody');
-        if (!tbody) return;
+        const tbody = document.getElementById('myRequestsTableBody') || document.getElementById('requestsTableBody');
         try {
             const res = await fetch(`${API_BASE_URL}/farmer/requests`, {
                 method: 'GET',
@@ -494,8 +518,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 credentials: 'include'
             });
             const data = await res.json();
+            const requests = Array.isArray(data.requests) ? data.requests : [];
+            const pendingCount = requestStatusCount(requests, 'PENDING');
+            setDashboardText('activeRequests', pendingCount);
+            setDashboardText('myRequestsCount', pendingCount);
+
             if (!data.success || !Array.isArray(data.requests) || data.requests.length === 0) {
-                showNoDataMessage(tbody, 8, 'No requests found.');
+                if (tbody) showNoDataMessage(tbody, tbody.id === 'myRequestsTableBody' ? 6 : 8, 'No requests found.');
+                return;
+            }
+
+            if (!tbody) return;
+
+            if (tbody.id === 'myRequestsTableBody') {
+                tbody.innerHTML = data.requests.map(r => `
+                    <tr>
+                        <td>${safeText(r.market_name)}</td>
+                        <td>${safeText(r.variety)}</td>
+                        <td class="amount right">${safeText(r.quantity_tons)}</td>
+                        <td>${formatDate(r.expected_delivery_date || r.date)}</td>
+                        <td class="status-col">${renderStatusBadge(r.status)}</td>
+                        <td>${safeText(r.rejection_reason)}</td>
+                    </tr>
+                `).join('');
                 return;
             }
 
@@ -518,13 +563,14 @@ document.addEventListener('DOMContentLoaded', () => {
             `).join('');
         } catch (err) {
             console.error('loadFarmerRequests failed', err);
-            showNoDataMessage(tbody, 8, 'Unable to load requests.');
+            setDashboardText('activeRequests', '0');
+            setDashboardText('myRequestsCount', '0');
+            if (tbody) showNoDataMessage(tbody, tbody.id === 'myRequestsTableBody' ? 6 : 8, 'Unable to load requests.');
         }
     }
 
     async function loadAcceptedRequests() {
         const tbody = document.getElementById('acceptedTableBody');
-        if (!tbody) return;
         try {
             const res = await fetch(`${API_BASE_URL}/farmer/accepted`, {
                 method: 'GET',
@@ -532,29 +578,32 @@ document.addEventListener('DOMContentLoaded', () => {
                 credentials: 'include'
             });
             const data = await res.json();
+            const requests = Array.isArray(data.requests) ? data.requests : [];
+            setDashboardText('acceptedOrders', requests.length);
+            setDashboardText('acceptedCount', requests.length);
+
             if (!data.success || !Array.isArray(data.requests) || data.requests.length === 0) {
-                showNoDataMessage(tbody, 7, 'No accepted requests found.');
+                if (tbody) showNoDataMessage(tbody, 6, 'No accepted requests found.');
                 return;
             }
 
+            if (!tbody) return;
+
             tbody.innerHTML = data.requests.map(r => `
                 <tr>
-                    <td>${formatDate(r.date)}</td>
-                    <td>${safeText(r.order_id)}</td>
+                    <td>${safeText(r.market_name)}</td>
                     <td>${safeText(r.variety)}</td>
                     <td class="amount right">${safeText(r.quantity_tons)}</td>
-                    <td>
-                        <div class="market-details">
-                            <strong>${safeText(r.market_name)}</strong>
-                        </div>
-                    </td>
                     <td class="amount right">${formatCurrency(r.agreed_price)}</td>
-                    <td>${safeText(r.expected_delivery_date)}</td>
+                    <td>${formatDate(r.expected_delivery_date || r.date)}</td>
+                    <td>${safeText(r.order_id)}</td>
                 </tr>
             `).join('');
         } catch (err) {
             console.error('loadAcceptedRequests failed', err);
-            showNoDataMessage(tbody, 7, 'Unable to load accepted requests.');
+            setDashboardText('acceptedOrders', '0');
+            setDashboardText('acceptedCount', '0');
+            if (tbody) showNoDataMessage(tbody, 6, 'Unable to load accepted requests.');
         }
     }
 
@@ -600,7 +649,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function loadPayments() {
         const tbody = document.getElementById('paymentsTableBody');
-        if (!tbody) return;
         try {
             const res = await fetch(`${API_BASE_URL}/farmer/payments`, {
                 method: 'GET',
@@ -608,10 +656,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 credentials: 'include'
             });
             const data = await res.json();
+            const payments = Array.isArray(data.payments) ? data.payments : [];
+            const pendingPayments = payments.filter(isPendingPayment);
+            const pendingAmount = pendingPayments.reduce((sum, payment) => {
+                const amount = Number(payment.total_amount_debited || payment.total_amount || 0);
+                return sum + (Number.isNaN(amount) ? 0 : amount);
+            }, 0);
+            setDashboardText('pendingPayments', formatCurrency(pendingAmount));
+            setDashboardText('paymentStatus', pendingPayments.length > 0 ? `${pendingPayments.length} Open` : 'Clear');
+
             if (!data.success || !Array.isArray(data.payments) || data.payments.length === 0) {
-                showNoDataMessage(tbody, 9, 'No payment records found.');
+                if (tbody) showNoDataMessage(tbody, 9, 'No payment records found.');
                 return;
             }
+
+            if (!tbody) return;
 
             tbody.innerHTML = data.payments.map(tx => `
                 <tr>
@@ -632,7 +691,9 @@ document.addEventListener('DOMContentLoaded', () => {
             `).join('');
         } catch (err) {
             console.error('loadPayments failed', err);
-            showNoDataMessage(tbody, 9, 'Unable to load payments.');
+            setDashboardText('pendingPayments', formatCurrency(0));
+            setDashboardText('paymentStatus', 'Open');
+            if (tbody) showNoDataMessage(tbody, 9, 'Unable to load payments.');
         }
     }
 
