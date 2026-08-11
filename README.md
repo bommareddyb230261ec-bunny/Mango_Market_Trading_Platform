@@ -512,13 +512,3 @@ python backend/app.py
 
 Then open `/health`, register a farmer, register a broker with a license file, approve the broker through the host dashboard, add broker prices, submit a farmer sell request, accept it as the broker, record a weighment, and submit/approve a payment proof.
 
-## Implementation Notes And Current Limitations
-
-- The active backend is Flask. Some dependencies and fragments reference FastAPI, but the runnable application factory is `create_app()` in `backend/main.py`.
-- Host access uses a plaintext hardcoded password in `backend/routes/host_routes.py`; this is acceptable for a demo but should be replaced with hashed credentials or real admin authentication before production use.
-- The frontend is static HTML/CSS/JavaScript rather than React/Vue/Angular.
-- UPI payment is not a payment gateway integration. The frontend generates a UPI intent/QR and the broker manually submits the UPI transaction ID plus proof.
-- SMS and in-app notifications are placeholders in `notification_utils.py`; email notification is the implemented channel.
-- Payment proof filenames are secured with `secure_filename`, but additional production safeguards such as randomized filenames, MIME validation, malware scanning, and private object storage would be recommended.
-- There is no Dockerfile, CI workflow, Alembic migration setup, production WSGI config, or cloud deployment configuration in the repository.
-- The app creates and updates tables at startup for development convenience; production deployments should use formal database migrations.
