@@ -1,0 +1,712 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mango Market Analytics Dashboard</title>
+    <link
+      rel="stylesheet"
+      href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+    />
+    <style>
+      :root {
+        --primary: #155724;
+        --primary-dark: #0e3b1c;
+        --secondary: #f4a300;
+        --accent: #1f7a8c;
+        --danger: #c0392b;
+        --success: #27ae60;
+        --warning: #f39c12;
+        --muted: #6c757d;
+        --bg: #f5f7fb;
+        --card: #ffffff;
+        --border: #e7ebf0;
+        --shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #edf5ee 0%, #f5f9ff 100%);
+        color: #1f2937;
+      }
+
+      .topbar {
+        background: linear-gradient(
+          135deg,
+          var(--primary) 0%,
+          var(--primary-dark) 100%
+        );
+        color: white;
+        padding: 18px 28px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: var(--shadow);
+      }
+
+      .brand {
+        font-size: 1.6rem;
+        font-weight: 700;
+      }
+
+      .top-actions {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .btn-top {
+        border: none;
+        border-radius: 8px;
+        padding: 9px 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: 0.2s ease;
+      }
+
+      .btn-top.secondary {
+        background: rgba(255, 255, 255, 0.12);
+        color: white;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+      }
+
+      .btn-top.secondary:hover {
+        background: rgba(255, 255, 255, 0.18);
+      }
+      .btn-top.primary {
+        background: #fff;
+        color: var(--primary);
+      }
+      .btn-top.primary:hover {
+        transform: translateY(-1px);
+      }
+
+      .page {
+        max-width: 1460px;
+        margin: 28px auto;
+        padding: 0 20px 40px;
+      }
+
+      .toolbar {
+        background: var(--card);
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow);
+        border-radius: 16px;
+        padding: 20px;
+        margin-bottom: 24px;
+      }
+
+      .toolbar-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-bottom: 18px;
+      }
+
+      .toolbar-title {
+        font-size: 1.35rem;
+        font-weight: 700;
+        color: #1f2937;
+      }
+
+      .date-ranges {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      .range-btn {
+        border: 1px solid var(--border);
+        background: #f8fafc;
+        color: #334155;
+        padding: 8px 12px;
+        border-radius: 8px;
+        font-size: 0.84rem;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      .range-btn.active {
+        background: #eaf7ef;
+        border-color: #9ad4ab;
+        color: var(--primary);
+      }
+
+      .filter-row {
+        display: flex;
+        gap: 14px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+
+      .filter-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        min-width: 160px;
+      }
+
+      .filter-group label {
+        font-size: 0.76rem;
+        font-weight: 700;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      .filter-group input,
+      .filter-group select {
+        width: 100%;
+        padding: 10px 12px;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        background: white;
+        color: #1f2937;
+      }
+
+      .btn-action {
+        border: none;
+        padding: 10px 16px;
+        border-radius: 10px;
+        font-weight: 700;
+        cursor: pointer;
+        background: var(--primary);
+        color: white;
+      }
+
+      .btn-action.secondary {
+        background: #6c757d;
+      }
+
+      .kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 18px;
+        margin-bottom: 26px;
+      }
+
+      .kpi-card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        box-shadow: var(--shadow);
+        padding: 20px 18px;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .kpi-card::before {
+        content: "";
+        position: absolute;
+        inset: 0 auto auto 0;
+        width: 100%;
+        height: 4px;
+        background: linear-gradient(90deg, var(--primary), var(--secondary));
+      }
+
+      .kpi-label {
+        color: var(--muted);
+        font-size: 0.76rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        margin-bottom: 8px;
+        font-weight: 700;
+      }
+
+      .kpi-value {
+        font-size: clamp(1.8rem, 3vw, 2.4rem);
+        font-weight: 800;
+        color: #111827;
+        margin-bottom: 4px;
+      }
+
+      .kpi-foot {
+        font-size: 0.82rem;
+        color: #4b5563;
+      }
+
+      .kpi-trend.up {
+        color: var(--success);
+      }
+      .kpi-trend.down {
+        color: var(--danger);
+      }
+      .kpi-trend.neutral {
+        color: var(--accent);
+      }
+
+      .dashboard-grid {
+        display: grid;
+        grid-template-columns: 1.3fr 0.9fr;
+        gap: 22px;
+        margin-bottom: 24px;
+      }
+
+      .panel {
+        background: var(--card);
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow);
+        border-radius: 18px;
+        padding: 18px;
+      }
+
+      .panel h3 {
+        margin: 0 0 16px;
+        font-size: 1.1rem;
+        font-weight: 800;
+        color: #111827;
+      }
+
+      .bar-item {
+        margin-bottom: 16px;
+      }
+      .bar-row {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.88rem;
+        margin-bottom: 6px;
+        color: #374151;
+      }
+      .bar-track {
+        height: 10px;
+        border-radius: 999px;
+        background: #edf2f7;
+        overflow: hidden;
+      }
+      .bar-fill {
+        height: 100%;
+        border-radius: inherit;
+      }
+      .bar-fill.success {
+        background: linear-gradient(90deg, #22c55e, #16a34a);
+      }
+      .bar-fill.warning {
+        background: linear-gradient(90deg, #f59e0b, #d97706);
+      }
+      .bar-fill.danger {
+        background: linear-gradient(90deg, #ef4444, #dc2626);
+      }
+      .bar-fill.neutral {
+        background: linear-gradient(90deg, #36b3c8, #2563eb);
+      }
+
+      .table-wrap {
+        overflow-x: auto;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      thead th {
+        background: #f8fafc;
+        color: #374151;
+        font-size: 0.75rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        font-weight: 800;
+        padding: 12px 10px;
+        text-align: left;
+        border-bottom: 1px solid var(--border);
+      }
+
+      tbody td {
+        padding: 12px 10px;
+        border-bottom: 1px solid #eef2f7;
+        font-size: 0.92rem;
+        color: #374151;
+      }
+
+      tbody tr:hover {
+        background: #fafcff;
+      }
+
+      .status-chip {
+        display: inline-block;
+        padding: 5px 10px;
+        border-radius: 999px;
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+
+      .status-chip.success {
+        background: #dcfce7;
+        color: #166534;
+      }
+      .status-chip.warning {
+        background: #fef3c7;
+        color: #92400e;
+      }
+      .status-chip.danger {
+        background: #fee2e2;
+        color: #991b1b;
+      }
+      .status-chip.neutral {
+        background: #dbeafe;
+        color: #1d4ed8;
+      }
+
+      .insight-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .insight-item {
+        border-left: 4px solid #94a3b8;
+        background: #f8fafc;
+        border-radius: 12px;
+        padding: 12px 14px;
+      }
+
+      .insight-item.severity-high {
+        border-left-color: var(--danger);
+      }
+      .insight-item.severity-medium {
+        border-left-color: var(--warning);
+      }
+      .insight-item.severity-low {
+        border-left-color: var(--muted);
+      }
+      .insight-item.severity-positive {
+        border-left-color: var(--success);
+      }
+
+      .insight-head {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.96rem;
+        margin-bottom: 6px;
+        flex-wrap: wrap;
+      }
+
+      .severity-pill {
+        border-radius: 999px;
+        padding: 4px 8px;
+        font-size: 0.68rem;
+        font-weight: 800;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+      .severity-pill.high {
+        background: #fee2e2;
+        color: #991b1b;
+      }
+      .severity-pill.medium {
+        background: #fef3c7;
+        color: #92400e;
+      }
+      .severity-pill.low {
+        background: #e2e8f0;
+        color: #334155;
+      }
+      .severity-pill.positive {
+        background: #dcfce7;
+        color: #166534;
+      }
+
+      .empty-row {
+        text-align: center;
+        color: var(--muted);
+        padding: 16px;
+      }
+
+      .error-box {
+        display: none;
+        background: #fee2e2;
+        color: #991b1b;
+        border: 1px solid #fca5a5;
+        border-radius: 12px;
+        padding: 12px 14px;
+        margin-bottom: 18px;
+        font-weight: 600;
+      }
+
+      .chart-row {
+        display: grid;
+        grid-template-columns: 120px 1fr 50px;
+        gap: 10px;
+        align-items: center;
+        margin-bottom: 12px;
+      }
+
+      .chart-label {
+        font-size: 0.86rem;
+        color: #475569;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .chart-bar-wrap {
+        background: #edf2f7;
+        height: 12px;
+        border-radius: 999px;
+        overflow: hidden;
+      }
+
+      .chart-bar {
+        height: 100%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, #2e8b57, #66bb6a);
+      }
+
+      .chart-bar.purple {
+        background: linear-gradient(90deg, #7c3aed, #a78bfa);
+      }
+      .chart-value {
+        font-size: 0.82rem;
+        color: #374151;
+        text-align: right;
+      }
+
+      @media (max-width: 980px) {
+        .dashboard-grid {
+          grid-template-columns: 1fr;
+        }
+        .toolbar-header {
+          align-items: flex-start;
+        }
+      }
+
+      @media (max-width: 640px) {
+        .topbar {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 12px;
+        }
+        .filter-row {
+          flex-direction: column;
+          align-items: stretch;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="topbar">
+      <div class="brand">Mango Market Analytics</div>
+      <div class="top-actions">
+        <button class="btn-top primary" id="backToDashboardBtn">
+          Back to Host Dashboard
+        </button>
+        <button class="btn-top secondary" id="logoutBtn">Logout</button>
+      </div>
+    </div>
+
+    <div class="page">
+      <div id="dashboardError" class="error-box"></div>
+
+      <div class="toolbar">
+        <div class="toolbar-header">
+          <div class="toolbar-title">Platform Overview</div>
+          <div class="date-ranges">
+            <button class="range-btn active" data-range="all" id="allBtn">
+              All Time
+            </button>
+            <button class="range-btn" data-range="7d" id="7dBtn">
+              Last 7 Days
+            </button>
+            <button class="range-btn" data-range="30d" id="30dBtn">
+              Last 30 Days
+            </button>
+            <button class="range-btn" data-range="month" id="monthBtn">
+              This Month
+            </button>
+          </div>
+        </div>
+
+        <div class="filter-row">
+          <div class="filter-group">
+            <label for="startDate">Start Date</label>
+            <input type="date" id="startDate" />
+          </div>
+          <div class="filter-group">
+            <label for="endDate">End Date</label>
+            <input type="date" id="endDate" />
+          </div>
+          <div class="filter-group">
+            <label for="marketFilter">Market</label>
+            <select id="marketFilter">
+              <option value="all">All Markets</option>
+            </select>
+          </div>
+          <button id="applyFiltersBtn" class="btn-action">Apply Filters</button>
+          <button id="resetFiltersBtn" class="btn-action secondary">
+            Reset
+          </button>
+        </div>
+      </div>
+
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-label">Total Farmers</div>
+          <div class="kpi-value" id="totalFarmersValue">0</div>
+          <div class="kpi-foot">Current active farmer base</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Total Brokers</div>
+          <div class="kpi-value" id="totalBrokersValue">0</div>
+          <div class="kpi-foot">Registered broker count</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Approved Brokers</div>
+          <div class="kpi-value" id="approvedBrokersValue">0</div>
+          <div class="kpi-foot">Approved broker count</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Pending Broker Requests</div>
+          <div class="kpi-value" id="pendingBrokersValue">0</div>
+          <div class="kpi-foot">Awaiting host verification</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Sell Requests</div>
+          <div class="kpi-value" id="totalRequestsValue">0</div>
+          <div class="kpi-foot">All requests in range</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Approval Rate</div>
+          <div class="kpi-value" id="approvalRateValue">0%</div>
+          <div class="kpi-foot">Approved ÷ Total brokers × 100</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Payment Completion</div>
+          <div class="kpi-value" id="paymentRateValue">0%</div>
+          <div class="kpi-foot">Approved/Paid ÷ Total payments × 100</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Pending Payment Value</div>
+          <div class="kpi-value" id="pendingAmountValue">₹0</div>
+          <div class="kpi-foot">Payments awaiting verification</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Total Trading Value</div>
+          <div class="kpi-value" id="totalAmountValue">₹0</div>
+          <div class="kpi-foot">Gross trade value in range</div>
+        </div>
+      </div>
+
+      <div class="dashboard-grid">
+        <div class="panel">
+          <h3>Broker Status Distribution</h3>
+          <div id="brokerBreakdown"></div>
+        </div>
+        <div class="panel">
+          <h3>Payment Status Distribution</h3>
+          <div id="paymentBreakdown"></div>
+        </div>
+      </div>
+
+      <div class="dashboard-grid">
+        <div class="panel">
+          <h3>Top Markets</h3>
+          <div id="marketChart"></div>
+        </div>
+        <div class="panel">
+          <h3>Actionable Insights</h3>
+          <div class="insight-list" id="insightList"></div>
+        </div>
+      </div>
+
+      <div class="dashboard-grid">
+        <div class="panel">
+          <h3>Market Overview</h3>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Market</th>
+                  <th>Total Brokers</th>
+                  <th>Approved</th>
+                  <th>Pending</th>
+                  <th>Rejected</th>
+                </tr>
+              </thead>
+              <tbody id="marketTableBody">
+                <tr>
+                  <td colspan="5" class="empty-row">No data available</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="panel">
+          <h3>Location Overview</h3>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Location</th>
+                  <th>Total</th>
+                  <th>Approved</th>
+                  <th>Pending</th>
+                </tr>
+              </thead>
+              <tbody id="locationTableBody">
+                <tr>
+                  <td colspan="4" class="empty-row">No data available</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="dashboard-grid">
+        <div class="panel">
+          <h3>Recent Payment Activity</h3>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Approved</th>
+                  <th>Pending</th>
+                  <th>Amount</th>
+                </tr>
+              </thead>
+              <tbody id="activityTableBody">
+                <tr>
+                  <td colspan="4" class="empty-row">No activity available</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="panel">
+          <h3>Priority Payments</h3>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Order ID</th>
+                  <th>Farmer</th>
+                  <th>Type</th>
+                  <th>Amount</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="priorityPaymentsBody">
+                <tr>
+                  <td colspan="5" class="empty-row">No pending payment data</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="../js/view_statics.js"></script>
+  </body>
+</html>
