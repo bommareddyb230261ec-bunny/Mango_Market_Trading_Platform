@@ -284,7 +284,3 @@ It is especially strong for discussing:
 - managing sales, payment, and verification operations in one platform
 
 ---
-
-## Short Interview Pitch
-
-“I built a full-stack agricultural trading platform where farmers, brokers, and a host admin interact in a marketplace workflow. The platform handles registration, OTP verification, price listing, sell requests, weighment recording, payment tracking, and host verification. It demonstrates my ability to design a multi-role system, secure sensitive user data, build REST APIs, connect a SQL database, and integrate business logic into a working product.”
