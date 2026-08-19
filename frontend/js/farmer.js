@@ -21,6 +21,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // 2. DOM Elements
   const locationSelect = document.getElementById("locationSelect");
+  const varietyFilter = document.getElementById("varietyFilter");
   const searchForm = document.getElementById("searchForm");
   const marketContainer = document.getElementById("marketListContainer");
   const priceSort = document.getElementById("priceSort");
@@ -34,6 +35,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const closeModalBtn = document.querySelector(".close-modal");
 
   let currentDistrict = "";
+  let currentMarkets = [];
   // Map from broker_id -> market object returned by /farmer/markets
   window.MARKETS_BY_BROKER = {};
 
@@ -130,6 +132,24 @@ document.addEventListener("DOMContentLoaded", () => {
     currentDistrict = locationSelect.value;
     if (!currentDistrict) return alert("Select a district");
     fetchMarkets(currentDistrict, priceSort.value);
+  });
+
+  locationSelect?.addEventListener("change", () => {
+    currentDistrict = locationSelect.value;
+    if (!currentDistrict) {
+      currentMarkets = [];
+      populateVarietyFilter(currentMarkets);
+      return;
+    }
+    if (varietyFilter) {
+      varietyFilter.innerHTML =
+        '<option value="">Loading varieties...</option>';
+    }
+    fetchMarkets(currentDistrict, priceSort.value);
+  });
+
+  varietyFilter?.addEventListener("change", () => {
+    applyMarketFilters();
   });
 
   // 5. Sort Event
@@ -269,10 +289,13 @@ document.addEventListener("DOMContentLoaded", () => {
         data.markets.forEach((mk) => {
           window.MARKETS_BY_BROKER[mk.broker_id] = mk;
         });
-        setDashboardText("marketsCount", data.markets.length);
-        renderMarkets(data.markets);
+        currentMarkets = data.markets;
+        populateVarietyFilter(currentMarkets);
+        applyMarketFilters();
         renderAggregateVarieties(data.markets);
       } else {
+        currentMarkets = [];
+        populateVarietyFilter(currentMarkets);
         setDashboardText("marketsCount", "0");
         marketContainer.innerHTML = "<p>No markets found in this district.</p>";
       }
@@ -281,6 +304,47 @@ document.addEventListener("DOMContentLoaded", () => {
       setDashboardText("marketsCount", "0");
       marketContainer.innerHTML = `<p>Error loading markets: ${e.message}</p>`;
     }
+  }
+
+  function getMarketVarieties(market) {
+    const prices = Array.isArray(market.prices) ? market.prices : [];
+    const varieties = Array.isArray(market.varieties) ? market.varieties : [];
+    return [
+      ...prices.map((price) => price.mango_variety),
+      ...varieties.map((variety) => variety.name || variety.mango_variety),
+    ]
+      .filter(Boolean)
+      .map((variety) => String(variety));
+  }
+
+  function populateVarietyFilter(markets) {
+    if (!varietyFilter) return;
+
+    const selectedVariety = varietyFilter.value;
+    const varieties = [...new Set(markets.flatMap(getMarketVarieties))].sort(
+      (left, right) => left.localeCompare(right),
+    );
+    varietyFilter.innerHTML = '<option value="">All varieties</option>';
+    varieties.forEach((variety) => {
+      const option = document.createElement("option");
+      option.value = variety;
+      option.textContent = variety;
+      varietyFilter.appendChild(option);
+    });
+    varietyFilter.value = varieties.includes(selectedVariety)
+      ? selectedVariety
+      : "";
+  }
+
+  function applyMarketFilters() {
+    const selectedVariety = varietyFilter?.value || "";
+    const filteredMarkets = selectedVariety
+      ? currentMarkets.filter((market) =>
+          getMarketVarieties(market).includes(selectedVariety),
+        )
+      : currentMarkets;
+    setDashboardText("marketsCount", filteredMarkets.length);
+    renderMarkets(filteredMarkets);
   }
 
   function renderMarkets(markets) {
