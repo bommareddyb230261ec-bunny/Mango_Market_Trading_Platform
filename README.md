@@ -6,8 +6,6 @@ This project is a full-stack agriculture trading platform designed for a real-wo
 
 The application is built using Python and Flask for the backend, MySQL for persistence, and a static HTML/CSS/JavaScript frontend. It combines several practical features such as role-based authentication, OTP email verification, encrypted financial data, file uploads, sale request tracking, weighment management, and host-level payment review.
 
-This is a strong interview project because it demonstrates end-to-end product thinking, backend API development, database design, role-based workflows, and real business logic rather than just a simple CRUD app.
-
 ---
 
 ## Business Problem
@@ -262,7 +260,6 @@ Then open:
 
 ---
 
-## Why This Project Is Valuable for Interviews
 
 This project shows that I can work across the full product lifecycle:
 
