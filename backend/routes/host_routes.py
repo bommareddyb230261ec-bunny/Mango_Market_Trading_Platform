@@ -690,6 +690,9 @@ def get_all_payments():
                 if farmer:
                     user = User.query.get(farmer.user_id)
 
+            txn_created = getattr(txn, 'transaction_date', None) or getattr(txn, 'created_at', None)
+            txn_updated = getattr(txn, 'updated_at', None) or txn_created
+
             payments.append({
                 'transaction_id': str(txn.id),
                 'type': 'transaction',
@@ -700,8 +703,8 @@ def get_all_payments():
                 'payment_status': txn.payment_status,
                 'upi_transaction_id': txn.upi_transaction_id or '-',
                 'payment_proof_url': f"/{txn.payment_proof}" if txn.payment_proof else None,
-                'created_at': txn.created_at.isoformat() if txn.created_at else None,
-                'updated_at': txn.updated_at.isoformat() if txn.updated_at else None
+                'created_at': txn_created.isoformat() if txn_created else None,
+                'updated_at': txn_updated.isoformat() if txn_updated else None
             })
 
         # Get all weighments
@@ -714,6 +717,8 @@ def get_all_payments():
                 if farmer:
                     user = User.query.get(farmer.user_id)
 
+            weighment_created = getattr(weighment, 'created_at', None)
+            weighment_updated = getattr(weighment, 'updated_at', None) or weighment_created
             amount = (weighment.actual_weight_tons or 0) * 1000 * (weighment.final_price_per_kg or 0)
             payments.append({
                 'transaction_id': f'w-{weighment.id}',
@@ -725,8 +730,8 @@ def get_all_payments():
                 'payment_status': weighment.payment_status,
                 'upi_transaction_id': weighment.upi_transaction_id or '-',
                 'payment_proof_url': f"/{weighment.payment_proof}" if weighment.payment_proof else None,
-                'created_at': weighment.created_at.isoformat() if weighment.created_at else None,
-                'updated_at': weighment.updated_at.isoformat() if weighment.updated_at else None
+                'created_at': weighment_created.isoformat() if weighment_created else None,
+                'updated_at': weighment_updated.isoformat() if weighment_updated else None
             })
 
         return jsonify(payments), 200

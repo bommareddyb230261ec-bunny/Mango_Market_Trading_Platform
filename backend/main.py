@@ -11,6 +11,7 @@ import logging
 import time
 import secrets
 import hashlib
+import math
 from datetime import datetime, timezone, date
 from typing import Optional, Any, cast, List, Dict, Union, Tuple
 from dotenv import load_dotenv
@@ -1316,7 +1317,7 @@ except Exception:
 
 @auth_bp.route('/send-otp', methods=['POST'])
 def send_otp():
-    data = request.get_json() or {}
+    data = request.get_json(silent=True) or {}
     email = (data.get('email') or '').strip()
     if not email:
         return jsonify({'success': False, 'message': 'Email is required'}), 400
@@ -1809,6 +1810,9 @@ def create_sell_request():
             qty_float = float(str(quantity))
         except (TypeError, ValueError):
             return jsonify({'success': False, 'message': 'Invalid broker_id or quantity format'}), 400
+
+        if not math.isfinite(qty_float) or qty_float <= 0:
+            return jsonify({'success': False, 'message': 'Quantity must be greater than zero'}), 400
 
         # Verify broker exists before creating request
         broker_obj = Broker.query.get(broker_int)
@@ -4212,6 +4216,21 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
             print(f"[WARN] Failed to import host_bp: {e1} | {e2}")
             host_bp_imported = None
 
+    # Import analytics routes
+    analytics_bp_imported = None
+    try:
+        from routes.analytics_routes import analytics_bp as imported_analytics_bp
+        analytics_bp_imported = imported_analytics_bp
+        print("[OK] Analytics routes imported successfully from routes.analytics_routes")
+    except Exception as e1:
+        try:
+            from backend.routes.analytics_routes import analytics_bp as imported_analytics_bp
+            analytics_bp_imported = imported_analytics_bp
+            print("[OK] Analytics routes imported successfully from backend.routes.analytics_routes")
+        except Exception as e2:
+            print(f"[WARN] Failed to import analytics_bp: {e1} | {e2}")
+            analytics_bp_imported = None
+
     # Register Blueprints
     print("\n[REGISTERING BLUEPRINTS]")
     
@@ -4243,6 +4262,13 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
         print("  WARN: /api/host - Host routes NOT registered (import failed)")
         host_bp = None
         host_bp = None
+
+    # Analytics routes
+    if analytics_bp_imported is not None:
+        app.register_blueprint(analytics_bp_imported, url_prefix='/api/analytics')
+        print("  - /api/analytics - Business Intelligence & analytics routes")
+    else:
+        print("  WARN: /api/analytics - Analytics routes NOT registered (import failed)")
 
     # Backwards-compatible API namespace for frontend expecting /api/farmer/*
     # Map the internal farmer handlers to /api/farmer/* paths.

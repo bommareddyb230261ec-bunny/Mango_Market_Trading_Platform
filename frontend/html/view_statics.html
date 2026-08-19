@@ -1,0 +1,864 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mango Market Analytics Dashboard</title>
+    <link
+      rel="stylesheet"
+      href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+    />
+    <style>
+      :root {
+        --primary: #155724;
+        --primary-dark: #0e3b1c;
+        --secondary: #f4a300;
+        --accent: #1f7a8c;
+        --danger: #c0392b;
+        --success: #27ae60;
+        --warning: #f39c12;
+        --muted: #64748b;
+        --bg: #f5f7fb;
+        --surface: #ffffff;
+        --border: #e2e8f0;
+        --ink: #172033;
+        --soft: #f8fafc;
+        --shadow: 0 6px 16px rgba(15, 23, 42, 0.07);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: #f5f7fb;
+        color: var(--ink);
+      }
+
+      .topbar {
+        background: linear-gradient(
+          135deg,
+          var(--primary) 0%,
+          var(--primary-dark) 100%
+        );
+        color: white;
+        padding: 16px 28px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: var(--shadow);
+      }
+
+      .brand {
+        font-size: 1.45rem;
+        font-weight: 800;
+      }
+
+      .top-actions,
+      .section-actions,
+      .date-ranges,
+      .filter-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      .btn-top,
+      .btn-action,
+      .range-btn,
+      .export-btn {
+        border: 1px solid transparent;
+        border-radius: 8px;
+        padding: 9px 14px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: 0.18s ease;
+      }
+
+      .btn-top.primary {
+        background: #fff;
+        color: var(--primary);
+      }
+
+      .btn-top.secondary {
+        background: rgba(255, 255, 255, 0.12);
+        color: #fff;
+        border-color: rgba(255, 255, 255, 0.22);
+      }
+
+      .btn-action {
+        background: var(--primary);
+        color: #fff;
+      }
+
+      .btn-action.secondary,
+      .export-btn {
+        background: #eef2f7;
+        color: #334155;
+        border-color: var(--border);
+      }
+
+      .btn-action:disabled,
+      .export-btn:disabled {
+        cursor: not-allowed;
+        opacity: 0.65;
+      }
+
+      .range-btn {
+        background: var(--soft);
+        color: #334155;
+        border-color: var(--border);
+        font-size: 0.84rem;
+      }
+
+      .range-btn.active {
+        background: #e8f6ed;
+        color: var(--primary);
+        border-color: #95d3a8;
+      }
+
+      .page {
+        max-width: 1480px;
+        margin: 24px auto;
+        padding: 0 20px 42px;
+      }
+
+      .toolbar,
+      .section {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        box-shadow: var(--shadow);
+      }
+
+      .toolbar {
+        padding: 18px;
+        margin-bottom: 20px;
+      }
+
+      .toolbar-header,
+      .section-header {
+        display: flex;
+        justify-content: space-between;
+        gap: 14px;
+        align-items: center;
+        flex-wrap: wrap;
+        margin-bottom: 16px;
+      }
+
+      .toolbar-title,
+      .section-title {
+        font-size: 1.16rem;
+        font-weight: 800;
+        margin: 0;
+      }
+
+      .filter-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        min-width: 155px;
+      }
+
+      .filter-group label {
+        color: var(--muted);
+        font-size: 0.73rem;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+
+      .filter-group input,
+      .filter-group select {
+        width: 100%;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 9px 11px;
+        background: #fff;
+        color: var(--ink);
+      }
+
+      .error-box,
+      .validation-box {
+        display: none;
+        margin-bottom: 16px;
+        border-radius: 8px;
+        padding: 12px 14px;
+        font-weight: 700;
+      }
+
+      .error-box {
+        color: #991b1b;
+        background: #fee2e2;
+        border: 1px solid #fca5a5;
+      }
+
+      .validation-box {
+        color: #92400e;
+        background: #fef3c7;
+        border: 1px solid #fcd34d;
+      }
+
+      .kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+        gap: 14px;
+        margin-bottom: 20px;
+      }
+
+      .kpi-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 16px;
+        box-shadow: var(--shadow);
+        min-height: 132px;
+      }
+
+      .kpi-label {
+        color: var(--muted);
+        font-size: 0.72rem;
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+        font-weight: 800;
+        margin-bottom: 8px;
+      }
+
+      .kpi-value {
+        color: #101827;
+        font-size: clamp(1.55rem, 2.4vw, 2.15rem);
+        font-weight: 850;
+        line-height: 1.12;
+        overflow-wrap: anywhere;
+      }
+
+      .kpi-foot {
+        color: #475569;
+        font-size: 0.82rem;
+        margin-top: 8px;
+      }
+
+      .dashboard-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px;
+        margin-bottom: 18px;
+      }
+
+      .section {
+        padding: 17px;
+        min-width: 0;
+      }
+
+      .section.full {
+        margin-bottom: 18px;
+      }
+
+      .chart-box {
+        position: relative;
+        min-height: 280px;
+        height: 320px;
+      }
+
+      .chart-box.short {
+        height: 260px;
+        min-height: 240px;
+      }
+
+      .state-message {
+        min-height: 120px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        color: var(--muted);
+        font-weight: 700;
+        padding: 18px;
+      }
+
+      .funnel-list,
+      .insight-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .funnel-stage {
+        display: grid;
+        grid-template-columns: minmax(130px, 1fr) 2fr minmax(92px, auto);
+        gap: 12px;
+        align-items: center;
+        padding: 10px 0;
+        border-bottom: 1px solid #edf2f7;
+      }
+
+      .funnel-stage:last-child {
+        border-bottom: 0;
+      }
+
+      .funnel-name {
+        font-weight: 800;
+      }
+
+      .funnel-track {
+        height: 16px;
+        background: #edf2f7;
+        border-radius: 999px;
+        overflow: hidden;
+      }
+
+      .funnel-fill {
+        height: 100%;
+        min-width: 2px;
+        background: linear-gradient(90deg, var(--primary), var(--secondary));
+      }
+
+      .funnel-meta {
+        color: #475569;
+        font-size: 0.82rem;
+        text-align: right;
+      }
+
+      .funnel-stage.largest-drop {
+        background: #fff7ed;
+        border-radius: 8px;
+        padding-left: 10px;
+        padding-right: 10px;
+      }
+
+      .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(130px, 1fr));
+        gap: 10px;
+        margin-bottom: 14px;
+      }
+
+      .summary-item {
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--soft);
+        padding: 12px;
+      }
+
+      .summary-label {
+        color: var(--muted);
+        font-size: 0.72rem;
+        font-weight: 800;
+        text-transform: uppercase;
+      }
+
+      .summary-value {
+        color: #111827;
+        font-size: 1.2rem;
+        font-weight: 850;
+        margin-top: 4px;
+      }
+
+      .insight-item {
+        border: 1px solid var(--border);
+        border-left: 4px solid #94a3b8;
+        border-radius: 8px;
+        padding: 12px 14px;
+        background: var(--soft);
+      }
+
+      .insight-item.severity-high {
+        border-left-color: var(--danger);
+      }
+      .insight-item.severity-medium {
+        border-left-color: var(--warning);
+      }
+      .insight-item.severity-low {
+        border-left-color: var(--muted);
+      }
+      .insight-item.severity-positive {
+        border-left-color: var(--success);
+      }
+
+      .insight-head {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        flex-wrap: wrap;
+        margin-bottom: 6px;
+      }
+
+      .severity-pill,
+      .status-chip {
+        display: inline-block;
+        border-radius: 999px;
+        padding: 4px 8px;
+        font-size: 0.68rem;
+        font-weight: 850;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+      }
+
+      .severity-pill.high,
+      .status-chip.danger {
+        background: #fee2e2;
+        color: #991b1b;
+      }
+      .severity-pill.medium,
+      .status-chip.warning {
+        background: #fef3c7;
+        color: #92400e;
+      }
+      .severity-pill.low,
+      .status-chip.neutral {
+        background: #e2e8f0;
+        color: #334155;
+      }
+      .severity-pill.positive,
+      .status-chip.success {
+        background: #dcfce7;
+        color: #166534;
+      }
+
+      .table-wrap {
+        overflow-x: auto;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      thead th {
+        background: var(--soft);
+        color: #374151;
+        font-size: 0.73rem;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        font-weight: 850;
+        padding: 11px 10px;
+        border-bottom: 1px solid var(--border);
+        white-space: nowrap;
+      }
+
+      tbody td {
+        padding: 11px 10px;
+        border-bottom: 1px solid #eef2f7;
+        color: #374151;
+        font-size: 0.9rem;
+        vertical-align: middle;
+        white-space: nowrap;
+      }
+
+      tbody tr:hover {
+        background: #fafcff;
+      }
+
+      .empty-row {
+        text-align: center;
+        color: var(--muted);
+        padding: 18px;
+        font-weight: 700;
+      }
+
+      @media (max-width: 1080px) {
+        .dashboard-grid,
+        .summary-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 680px) {
+        .topbar {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+
+        .filter-row {
+          align-items: stretch;
+          flex-direction: column;
+        }
+
+        .filter-group {
+          min-width: 100%;
+        }
+
+        .funnel-stage {
+          grid-template-columns: 1fr;
+        }
+
+        .funnel-meta {
+          text-align: left;
+        }
+      }
+
+      /* ===== SUPPLY ORIGIN ANALYTICS STYLES ===== */
+      .matrix-table {
+        width: 100%;
+        border-collapse: collapse;
+        background: white;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        overflow: hidden;
+        margin-top: 16px;
+      }
+
+      .matrix-table thead {
+        background: linear-gradient(
+          135deg,
+          var(--primary) 0%,
+          var(--primary-dark) 100%
+        );
+        color: white;
+      }
+
+      .matrix-table th {
+        padding: 12px 16px;
+        text-align: left;
+        font-weight: 700;
+        border-right: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .matrix-table th.location-header {
+        min-width: 150px;
+      }
+
+      .matrix-table th.variety-header {
+        text-align: center;
+        font-size: 0.9rem;
+      }
+
+      .matrix-table th.total-header {
+        background: rgba(0, 0, 0, 0.1);
+        font-weight: 800;
+      }
+
+      .matrix-table td {
+        padding: 10px 16px;
+        border-right: 1px solid var(--border);
+        border-bottom: 1px solid var(--border);
+      }
+
+      .matrix-table td.location-name {
+        font-weight: 600;
+        background: #f8fafc;
+        position: sticky;
+        left: 0;
+        z-index: 1;
+      }
+
+      .matrix-table td.matrix-cell {
+        text-align: center;
+        background: white;
+      }
+
+      .matrix-table td.total-cell {
+        text-align: center;
+        font-weight: 700;
+        background: #eef2f7;
+        color: var(--primary);
+      }
+
+      .matrix-table td.grand-total-cell {
+        text-align: center;
+        font-weight: 900;
+        background: linear-gradient(90deg, #e8f5e9, #c8e6c9);
+        color: #1b5e20;
+        font-size: 1.05rem;
+      }
+
+      .matrix-table tr.totals-row {
+        background: #f1f5f9;
+        border-top: 2px solid var(--primary);
+      }
+
+      .matrix-table tr.totals-row td {
+        border-bottom: 2px solid var(--primary);
+        font-weight: 700;
+      }
+
+      .matrix-table tbody tr:hover {
+        background: #f8fafc;
+      }
+
+      .matrix-table tbody tr:last-child:hover {
+        background: #f1f5f9;
+      }
+
+      /* Responsive matrix table */
+      @media (max-width: 1024px) {
+        .matrix-table {
+          font-size: 0.9rem;
+        }
+
+        .matrix-table th,
+        .matrix-table td {
+          padding: 8px 12px;
+        }
+
+        .matrix-table th.variety-header {
+          font-size: 0.8rem;
+        }
+      }
+
+      @media (max-width: 768px) {
+        .matrix-table {
+          font-size: 0.85rem;
+          overflow-x: auto;
+          display: block;
+        }
+
+        .matrix-table thead,
+        .matrix-table tbody {
+          display: block;
+        }
+
+        .matrix-table th,
+        .matrix-table td {
+          padding: 6px 10px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="topbar">
+      <div class="brand">Mango Market Analytics</div>
+      <div class="top-actions">
+        <button class="btn-top primary" id="backToDashboardBtn">
+          Back to Host Dashboard
+        </button>
+        <button class="btn-top secondary" id="logoutBtn">Logout</button>
+      </div>
+    </div>
+
+    <main class="page">
+      <div id="dashboardError" class="error-box"></div>
+      <div id="filterValidation" class="validation-box"></div>
+
+      <section class="toolbar">
+        <div class="toolbar-header">
+          <h1 class="toolbar-title">Business Intelligence Dashboard</h1>
+          <div class="date-ranges" aria-label="Quick date ranges">
+            <button class="range-btn active" data-range="all" id="allBtn">
+              All Time
+            </button>
+            <button class="range-btn" data-range="7d" id="7dBtn">
+              Last 7 Days
+            </button>
+            <button class="range-btn" data-range="30d" id="30dBtn">
+              Last 30 Days
+            </button>
+            <button class="range-btn" data-range="month" id="monthBtn">
+              This Month
+            </button>
+          </div>
+        </div>
+        <div class="filter-row">
+          <div class="filter-group">
+            <label for="startDate">Start Date</label>
+            <input type="date" id="startDate" />
+          </div>
+          <div class="filter-group">
+            <label for="endDate">End Date</label>
+            <input type="date" id="endDate" />
+          </div>
+          <div class="filter-group">
+            <label for="marketFilter">Market</label>
+            <select id="marketFilter">
+              <option value="all">All Markets</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label for="varietyFilter">Variety</label>
+            <select id="varietyFilter">
+              <option value="all">All Varieties</option>
+            </select>
+          </div>
+          <button id="applyFiltersBtn" class="btn-action">Apply Filters</button>
+          <button id="resetFiltersBtn" class="btn-action secondary">
+            Reset
+          </button>
+        </div>
+      </section>
+
+      <section
+        class="kpi-grid"
+        id="kpiGrid"
+        aria-label="Executive KPIs"
+      ></section>
+
+      <div class="dashboard-grid">
+        <section class="section">
+          <div class="section-header">
+            <h2 class="section-title">Performance Trends</h2>
+          </div>
+          <div class="dashboard-grid">
+            <div class="chart-box short" data-section-state="trends">
+              <canvas id="sellRequestsChart"></canvas>
+            </div>
+            <div class="chart-box short" data-section-state="trends">
+              <canvas id="tradingValueChart"></canvas>
+            </div>
+            <div class="chart-box short" data-section-state="trends">
+              <canvas id="tradingQuantityChart"></canvas>
+            </div>
+            <div class="chart-box short" data-section-state="trends">
+              <canvas id="paymentActivityChart"></canvas>
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="section-header">
+            <h2 class="section-title">Trading Funnel</h2>
+          </div>
+          <div id="funnelContainer" class="funnel-list"></div>
+        </section>
+      </div>
+
+      <div class="dashboard-grid">
+        <section class="section">
+          <div class="section-header">
+            <h2 class="section-title">Market Analytics</h2>
+          </div>
+          <div class="dashboard-grid">
+            <div class="chart-box short">
+              <canvas id="topMarketsValueChart"></canvas>
+            </div>
+            <div class="chart-box short">
+              <canvas id="marketAcceptanceChart"></canvas>
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="section-header">
+            <h2 class="section-title">Mango Variety Analytics</h2>
+          </div>
+          <div class="dashboard-grid">
+            <div class="chart-box short">
+              <canvas id="varietyQuantityChart"></canvas>
+            </div>
+            <div class="chart-box short">
+              <canvas id="varietyValueChart"></canvas>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <div class="dashboard-grid">
+        <section class="section">
+          <div class="section-header">
+            <h2 class="section-title">Payment Analytics</h2>
+          </div>
+          <div id="paymentSummary" class="summary-grid"></div>
+          <div class="chart-box">
+            <canvas id="paymentStatusChart"></canvas>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="section-header">
+            <h2 class="section-title">Supply Origin Analytics</h2>
+          </div>
+          <div id="supplyOriginSummary" class="summary-grid"></div>
+          <div class="chart-box">
+            <canvas id="sourceLocationsChart"></canvas>
+          </div>
+          <div class="chart-box">
+            <canvas id="topVarietiesChart"></canvas>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="section-header">
+            <h2 class="section-title">Actionable Insights</h2>
+          </div>
+          <div id="insightList" class="insight-list"></div>
+        </section>
+      </div>
+
+      <section class="section full" id="supplyOriginSection">
+        <div class="section-header">
+          <h2 class="section-title">Location × Variety Supply Matrix</h2>
+        </div>
+        <div class="table-wrap">
+          <div id="locationVarietyMatrix"></div>
+        </div>
+      </section>
+
+      <section class="section full">
+        <div class="section-header">
+          <h2 class="section-title">Market Performance Table</h2>
+          <button id="exportMarketsBtn" class="export-btn">Export CSV</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Market</th>
+                <th>Total Requests</th>
+                <th>Accepted</th>
+                <th>Rejected</th>
+                <th>Pending</th>
+                <th>Acceptance Rate</th>
+                <th>Trading Quantity</th>
+                <th>Trading Value</th>
+                <th>Average Final Price</th>
+              </tr>
+            </thead>
+            <tbody id="marketTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="section full">
+        <div class="section-header">
+          <h2 class="section-title">Variety Performance Table</h2>
+          <button id="exportVarietiesBtn" class="export-btn">Export CSV</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Variety</th>
+                <th>Total Requests</th>
+                <th>Accepted Requests</th>
+                <th>Trading Quantity</th>
+                <th>Trading Value</th>
+                <th>Average Final Price</th>
+              </tr>
+            </thead>
+            <tbody id="varietyTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="section full">
+        <div class="section-header">
+          <h2 class="section-title">Priority Payments Table</h2>
+          <button id="exportPaymentsBtn" class="export-btn">Export CSV</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Order ID</th>
+                <th>Sell Request ID</th>
+                <th>Farmer</th>
+                <th>Market</th>
+                <th>Status</th>
+                <th>Quantity</th>
+                <th>Final Price</th>
+                <th>Calculated Value</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+            <tbody id="priorityPaymentsBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <script src="../js/view_statics.js"></script>
+  </body>
+</html>
