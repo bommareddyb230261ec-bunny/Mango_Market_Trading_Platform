@@ -1,183 +1,235 @@
-# Mango Market Trading Platform
+# 🥭 Mango Market Trading Platform
 
-## Project Summary
+A full-stack agriculture trading platform that connects mango farmers with Mango Traders through a transparent, verified marketplace — with host-level oversight for trader onboarding and payment approvals.
 
-This project is a full-stack agriculture trading platform designed for a real-world marketplace workflow between farmers, Mango Traders, and a host/admin reviewer. The system connects mango farmers who want to sell produce with Mango Traders who publish market prices and manage transactions, while the host verifies trader onboarding and payment approvals.
-
-The application is built using Python and Flask for the backend, MySQL for persistence, and a static HTML/CSS/JavaScript frontend. It combines several practical features such as role-based authentication, OTP email verification, encrypted financial data, file uploads, sale request tracking, weighment management, and host-level payment review.
-
----
-
-## Business Problem
-
-Farmers often struggle to discover trustworthy Mango Traders, negotiate prices, and track the lifecycle of a crop sale. Mango Traders need a way to manage market pricing, review incoming sales requests, record actual weighment, and handle payment verification. There also needs to be a trusted verification layer for Mango Traders and payments before funds are finalized.
-
-This platform solves that by creating a marketplace where:
-
-- Farmers can search Mango Trader markets and submit sell requests
-- Mango Traders can manage prices, accept or reject requests, and record weighments
-- Hosts can approve Mango Trader registrations and verify payment proofs
-- The system stores transaction details, commission logic, and payment status over time
+![Python](https://img.shields.io/badge/Python-3.8%2B-blue)
+![Flask](https://img.shields.io/badge/Flask-Backend-black)
+![MySQL](https://img.shields.io/badge/MySQL-Database-orange)
+![License](https://img.shields.io/badge/License-MIT-green)
+![Status](https://img.shields.io/badge/Status-Active-brightgreen)
 
 ---
 
-## Core Roles
+## 📖 Table of Contents
 
-### 1. Farmer
+- [Overview](#-overview)
+- [Business Problem](#-business-problem)
+- [Core Roles](#-core-roles)
+- [Tech Stack](#-tech-stack)
+- [Architecture](#-architecture)
+- [Database Schema](#-database-schema)
+- [Key Features](#-key-features)
+- [API Reference](#-api-reference)
+- [User Journeys](#-user-journeys)
+- [Project Structure](#-project-structure)
+- [Getting Started](#-getting-started)
+- [Environment Variables](#-environment-variables)
+- [Running the App](#-running-the-app)
+- [Skills Demonstrated](#-skills-demonstrated)
+- [License](#-license)
 
-- Registers with personal details and verifies email using OTP
-- Views available Mango Trader markets by district
+---
+
+## 🌍 Overview
+
+**Mango Market Trading Platform** is a full-stack web application that digitizes the mango trading workflow between three key stakeholders: **Farmers**, **Mango Traders**, and a **Host/Admin** reviewer. It replicates a real-world agricultural marketplace — enabling price discovery, sell-request negotiation, weighment recording, and payment verification, all within a secure, role-based system.
+
+Built with **Python (Flask)** on the backend, **MySQL** for persistence, and a **vanilla HTML/CSS/JavaScript** frontend, the project demonstrates end-to-end product thinking: from schema design to secure API development to real-world workflow orchestration.
+
+---
+
+## 🎯 Business Problem
+
+Farmers often struggle to discover trustworthy Mango Traders, negotiate fair prices, and track the lifecycle of a crop sale. Meanwhile, Mango Traders need tools to manage market pricing, review incoming sale requests, record actual weighment, and handle payment verification — with a trusted third-party layer validating traders and payments before funds are finalized.
+
+This platform addresses that gap by providing:
+
+- A **searchable marketplace** where farmers discover verified Mango Traders by district
+- **Price transparency** through trader-published, variety-wise market rates
+- A **structured negotiation and fulfillment flow** from sell request to payment
+- A **host-verified trust layer** for trader onboarding and payment approval
+
+---
+
+## 👥 Core Roles
+
+### 🌾 Farmer
+
+- Registers and verifies identity via email OTP
+- Browses Mango Trader markets by district
 - Selects a mango variety and submits a sell request
-- Tracks accepted requests, payment status, and weighment data
-- Stores encrypted bank and UPI details securely
+- Tracks request status, weighment, and payment progress
+- Stores bank/UPI details securely (encrypted at rest)
 
-### 2. Mango Trader
+### 🧺 Mango Trader (Buyer)
 
-- Registers with market information and trade license upload
-- Waits for host verification before being allowed to operate
-- Publishes mango market prices and commission details
-- Accepts or rejects farmer sell requests
-- Records weighment and final sale amount
-- Submits payment details and proof for verification
+- The buyer in the marketplace — purchases mangoes directly from farmers
+- Registers with market details and uploads a trade license
+- Awaits host verification before going live
+- Publishes market prices and commission rates
+- Accepts or rejects incoming farmer sell requests
+- Records actual weighment and final sale amount
+- Submits payment proof and UPI transaction references
 
-### 3. Host/Admin
+### 🛡️ Host / Admin
 
-- Verifies new Mango Trader registrations
-- Approves or rejects trade licenses
-- Reviews pending payment submissions
-- Confirms accepted payments and notifies farmers
+- Verifies new Mango Trader registrations and licenses
+- Approves or rejects trader onboarding
+- Reviews and confirms pending payment submissions
+- Triggers farmer notifications on payment approval
 
 ---
 
-## Technical Architecture
+## 🛠️ Tech Stack
+
+| Layer           | Technology                                                   |
+| --------------- | ------------------------------------------------------------ |
+| Backend         | Python, Flask                                                |
+| Database        | MySQL via SQLAlchemy                                         |
+| Frontend        | HTML5, CSS3, JavaScript                                      |
+| Auth & Security | Werkzeug password hashing, Flask sessions, Fernet encryption |
+| Email           | SMTP-based OTP & notification service                        |
+| File Handling   | Trade license & payment proof uploads                        |
+
+---
+
+## 🏗️ Architecture
 
 ### Backend
 
-- Flask application factory in [backend/main.py](backend/main.py)
-- App entry points in [backend/app.py](backend/app.py) and [backend/server.py](backend/server.py)
-- Database configuration in [backend/db_config.py](backend/db_config.py)
-- Email, encryption, and logging utilities in:
-  - [backend/email_service.py](backend/email_service.py)
-  - [backend/encryption_utils.py](backend/encryption_utils.py)
-  - [backend/audit_utils.py](backend/audit_utils.py)
-  - [backend/notification_utils.py](backend/notification_utils.py)
+| File                                                                          | Responsibility                |
+| ----------------------------------------------------------------------------- | ----------------------------- |
+| [`backend/main.py`](backend/main.py)                                          | Flask application factory     |
+| [`backend/app.py`](backend/app.py) / [`backend/server.py`](backend/server.py) | Application entry points      |
+| [`backend/db_config.py`](backend/db_config.py)                                | Database configuration        |
+| [`backend/email_service.py`](backend/email_service.py)                        | OTP & notification emails     |
+| [`backend/encryption_utils.py`](backend/encryption_utils.py)                  | Fernet-based field encryption |
+| [`backend/audit_utils.py`](backend/audit_utils.py)                            | Audit logging                 |
+| [`backend/notification_utils.py`](backend/notification_utils.py)              | In-app / email notifications  |
 
 ### Frontend
 
-- HTML pages under [frontend/html](frontend/html)
-- JavaScript logic under [frontend/js](frontend/js)
-- Styling under [frontend/css](frontend/css)
-
-### Database
-
-The application uses SQLAlchemy models for user and marketplace data, with MySQL as the main relational database. Key entities include:
-
-- users
-- user_sessions
-- places
-- farmers
-- brokers *(Mango Traders — table/model name retained in code)*
-- market_prices
-- sell_requests
-- weighments
-- transactions
-- farmer_orders
+- **Pages:** [`frontend/html`](frontend/html)
+- **Logic:** [`frontend/js`](frontend/js)
+- **Styles:** [`frontend/css`](frontend/css)
 
 ---
 
-## Important Features Implemented
+## 🗄️ Database Schema
 
-### Authentication and Security
+Built with SQLAlchemy ORM models on MySQL. Core entities:
 
-- Role-based login for farmers and Mango Traders
-- OTP-based email verification and password reset flow
-- Flask session management with a custom session cookie
-- Password hashing using Werkzeug
-- Single active session enforcement per user
-- Encrypted bank/UPI data using Fernet
-- File validation for uploaded trade licenses and payment proofs
-
-### Marketplace and Trading Flow
-
-- Farmers browse Mango Trader markets by district
-- Mango Traders publish variety-wise mango prices and stock
-- Farmers submit sell requests with product quantity and preferred date
-- Mango Traders accept or reject requests with reasons and pricing logic
-- Accepted orders generate order IDs and keep locked pricing
-
-### Weighment and Payment Workflow
-
-- Mango Traders record actual crop weight and final price per kg
-- Commission and net payable are calculated automatically
-- Payment status moves through stages such as pending, initiated, awaiting verification, and paid
-- Proof uploads and UPI transaction references are submitted for host review
-
-### Host Verification Layer
-
-- Mango Trader registration is reviewed before activation
-- Pending payment records are approved or rejected by the host
-- Email notifications are sent to farmers when payment is approved
+| Table           | Purpose                                                         |
+| --------------- | --------------------------------------------------------------- |
+| `users`         | Base authentication records                                     |
+| `user_sessions` | Single active session enforcement                               |
+| `places`        | District / location reference data                              |
+| `farmers`       | Farmer profile & encrypted payout details                       |
+| `mango_traders` | Mango Trader profile — buyers who purchase mangoes from farmers |
+| `market_prices` | Variety-wise pricing & commission data                          |
+| `sell_requests` | Farmer-initiated sale requests                                  |
+| `weighments`    | Recorded crop weight & final pricing                            |
+| `transactions`  | Payment records & status tracking                               |
+| `farmer_orders` | Order lifecycle tied to accepted requests                       |
 
 ---
 
-## Main API Structure
+## ✨ Key Features
 
-The app registers Flask blueprints for separated responsibilities. Route paths below retain the original `broker` naming in code for backward compatibility, even though the role is referred to as "Mango Trader" throughout the product:
+### 🔐 Authentication & Security
 
-- /auth — registration, login, OTP, sessions
-- /farmer — farmer dashboard, market listing, sell requests, profile
-- /broker — Mango Trader dashboard, prices, requests, weighments, payment submission
-- /market — marketplace access routes
-- /api/host — host verification and payment review
-- /api/admin — admin-style Mango Trader management routes
-- /api/analytics — analytics and business reporting endpoints
+- Role-based login for Farmers and Mango Traders
+- OTP-based email verification and password reset
+- Custom Flask session cookie with single active session enforcement
+- Werkzeug password hashing
+- Fernet-encrypted bank/UPI data
+- Server-side validation for uploaded licenses and payment proofs
 
-Important routes include:
+### 🛒 Marketplace & Trading Flow
 
-- POST /auth/register
-- POST /auth/login
-- GET /farmer/markets
-- POST /farmer/sell-request
-- GET /broker/dashboard
-- POST /broker/update-prices
-- POST /broker/request/<request_id>/status
-- POST /broker/weighment
-- POST /api/host/verify-password
-- POST /api/host/payments/<transaction_id>/approve
-- GET /health
+- District-based market discovery
+- Variety-wise price and stock publishing
+- Sell request submission with quantity and preferred date
+- Accept/reject logic with reasons and locked pricing
+- Auto-generated order IDs on acceptance
+
+### ⚖️ Weighment & Payment Workflow
+
+- Actual crop weight and final price-per-kg recording
+- Automatic commission and net-payable calculation
+- Multi-stage payment status: `pending → initiated → awaiting verification → paid`
+- Proof-of-payment and UPI reference uploads for host review
+
+### ✅ Host Verification Layer
+
+- Pre-activation review of Mango Trader registrations
+- Approve/reject workflow for pending payments
+- Automated farmer notifications on payment approval
 
 ---
 
-## Example User Journey
+## 📡 API Reference
+
+Routes are organized into Flask blueprints by responsibility.
+
+| Blueprint    | Prefix           | Purpose                                           |
+| ------------ | ---------------- | ------------------------------------------------- |
+| Auth         | `/auth`          | Registration, login, OTP, sessions                |
+| Farmer       | `/farmer`        | Dashboard, markets, sell requests, profile        |
+| Mango Trader | `/mango-trader`  | Dashboard, prices, requests, weighments, payments |
+| Market       | `/market`        | Public marketplace access                         |
+| Host         | `/api/host`      | Trader verification, payment review               |
+| Admin        | `/api/admin`     | Admin-level trader management                     |
+| Analytics    | `/api/analytics` | Business reporting endpoints                      |
+
+**Notable Endpoints**
+
+```http
+POST   /auth/register
+POST   /auth/login
+GET    /farmer/markets
+POST   /farmer/sell-request
+GET    /mango-trader/dashboard
+POST   /mango-trader/update-prices
+POST   /mango-trader/request/<request_id>/status
+POST   /mango-trader/weighment
+POST   /api/host/verify-password
+POST   /api/host/payments/<transaction_id>/approve
+GET    /health
+```
+
+---
+
+## 🔄 User Journeys
 
 ### Farmer Flow
 
-1. Farmer registers and verifies email OTP
-2. Farmer logs in and searches markets by district
-3. Farmer views Mango Trader prices and mango varieties
-4. Farmer submits a sell request
-5. Mango Trader accepts or rejects the request
-6. If accepted, farmer tracks order status and payment process
+1. Register and verify email via OTP
+2. Log in and search markets by district
+3. View Mango Trader prices and available varieties
+4. Submit a sell request
+5. Await trader acceptance or rejection
+6. Track order status and payment progress
 
 ### Mango Trader Flow
 
-1. Mango Trader registers and uploads trade license
-2. Mango Trader waits for host approval
-3. Mango Trader updates market prices and commission
-4. Mango Trader reviews received sell requests
-5. Mango Trader records actual weighment and final price
-6. Mango Trader submits proof and UPI transaction details
+1. Register and upload trade license
+2. Await host approval
+3. Publish market prices and commission rates
+4. Review incoming sell requests
+5. Record actual weighment and final price
+6. Submit payment proof and UPI transaction details
 
 ### Host Flow
 
-1. Host logs in using host password
-2. Reviews pending Mango Trader applications
-3. Approves or rejects registrations
-4. Reviews payment submissions and marks them paid or rejected
+1. Log in with host credentials
+2. Review pending Mango Trader applications
+3. Approve or reject registrations
+4. Review payment submissions and mark them paid or rejected
 
 ---
 
-## Project Structure
+## 📁 Project Structure
 
 ```text
 Mango_Market_Trading_Platform/
@@ -204,30 +256,36 @@ Mango_Market_Trading_Platform/
 ├── instance/
 ├── requirements.txt
 ├── README.md
-└── .env.example (if present in your local setup)
+└── .env.example
 ```
 
 ---
 
-## Setup Instructions
+## 🚀 Getting Started
 
 ### Prerequisites
 
 - Python 3.8+
 - MySQL or MariaDB
-- SMTP credentials for OTP and email notifications
+- SMTP credentials (for OTP and email notifications)
 
-### Install dependencies
+### Installation
 
 ```bash
+# Create and activate a virtual environment
 python -m venv .venv
-.\.venv\Scripts\Activate.ps1
+.\.venv\Scripts\Activate.ps1      # Windows PowerShell
+# source .venv/bin/activate       # macOS/Linux
+
+# Install dependencies
 pip install -r requirements.txt
 ```
 
-### Environment variables
+---
 
-Create a `.env` file with values like:
+## ⚙️ Environment Variables
+
+Create a `.env` file in the project root:
 
 ```env
 SECRET_KEY=your_secret_key
@@ -245,38 +303,46 @@ MANGO_MARKET_ENCRYPTION_KEY=
 CORS_ORIGINS=http://127.0.0.1:5000,http://localhost:5000
 ```
 
-### Run the app
+> ⚠️ **Never commit your `.env` file.** Add it to `.gitignore` and share only `.env.example` with placeholder values.
+
+---
+
+## ▶️ Running the App
 
 ```bash
 python backend/app.py
 ```
 
-Then open:
+Then visit:
 
-- http://127.0.0.1:5000/
-- http://127.0.0.1:5000/farmer_login.html
-- http://127.0.0.1:5000/broker_login.html
-- http://127.0.0.1:5000/host_access.html
+| Page               | URL                                           |
+| ------------------ | --------------------------------------------- |
+| Landing Page       | http://127.0.0.1:5000/                        |
+| Farmer Login       | http://127.0.0.1:5000/farmer_login.html       |
+| Mango Trader Login | http://127.0.0.1:5000/mango_trader_login.html |
+| Host Access        | http://127.0.0.1:5000/host_access.html        |
+
+---
+
+## 💡 Skills Demonstrated
+
+This project reflects end-to-end product and engineering capability, including:
+
+- Business requirement modeling and workflow design
+- Relational database schema design (SQLAlchemy / MySQL)
+- Role-based authorization and session management
+- REST API development with Flask blueprints
+- Secure handling of file uploads and sensitive data (encryption at rest)
+- Multi-stage payment and verification logic
+- Frontend–backend integration
+- Real-world, multi-role marketplace orchestration
 
 ---
 
-This project shows that I can work across the full product lifecycle:
+## 📄 License
 
-- Business requirement modeling
-- Database schema design
-- Role-based authorization
-- REST API development
-- Secure handling of upload and sensitive data
-- Payment and verification logic
-- Frontend integration with backend APIs
-- Real-world workflow orchestration
-
-It is especially strong for discussing:
-
-- designing practical marketplace systems
-- building secure web applications
-- handling multi-role workflows
-- integrating email OTP and encrypted storage
-- managing sales, payment, and verification operations in one platform
+This project is licensed under the [MIT License](LICENSE).
 
 ---
+
+<p align="center">Built with care for a real-world agricultural marketplace 🥭</p>
