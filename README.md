@@ -40,13 +40,16 @@ Built with **Python (Flask)** on the backend, **MySQL** for persistence, and a *
 
 ## 🎯 Business Problem
 
-Farmers often struggle to discover trustworthy Mango Traders, negotiate fair prices, and track the lifecycle of a crop sale. Meanwhile, Mango Traders need tools to manage market pricing, review incoming sale requests, record actual weighment, and handle payment verification — with a trusted third-party layer validating traders and payments before funds are finalized.
+Farmers often struggle to discover which of the many markets in their area offers the best price for a particular mango variety. Calling around 200 markets to compare rates is slow, unreliable, and makes it harder to choose a profitable buyer. Farmers also risk cutting and transporting their fruits to a market before knowing whether that market actually wants the produce. If the trader does not accept the sale, the farmer may be left with harvested fruit, wasted transport costs, and no confirmed buyer. After selling, farmers can also lose track of which markets have completed payment. Mango Traders face the corresponding challenge of confirming whether each farmer has been paid.
+
+The platform addresses these problems by centralizing variety-wise market prices, introducing a trader-approved sell-request workflow, and providing transaction management for both sides of the sale. Farmers can filter markets and compare prices, then send a sell request at an acceptable price before cutting the fruits or travelling to the market. The trader reviews and accepts the request first; only after acceptance does the farmer proceed with harvesting and delivery. Farmers and Mango Traders can then track payment status and confirm which payments are completed or still pending. A trusted host layer validates traders and payment submissions before funds are finalized.
 
 This platform addresses that gap by providing:
 
 - A **searchable marketplace** where farmers discover verified Mango Traders by district
 - **Price transparency** through trader-published, variety-wise market rates
-- A **structured negotiation and fulfillment flow** from sell request to payment
+- A **sell-request approval flow** that confirms trader demand before the farmer harvests and transports the fruits
+- A **structured fulfillment and transaction flow** from accepted sell request to payment completion
 - A **host-verified trust layer** for trader onboarding and payment approval
 
 ---
@@ -56,9 +59,9 @@ This platform addresses that gap by providing:
 ### 🌾 Farmer
 
 - Registers and verifies identity via email OTP
-- Browses Mango Trader markets by district
+- Filters and compares variety-wise prices across available markets
 - Selects a mango variety and submits a sell request
-- Tracks request status, weighment, and payment progress
+- Tracks request status, weighment, and which market payments are completed or pending
 - Stores bank/UPI details securely (encrypted at rest)
 
 ### 🧺 Mango Trader (Buyer)
@@ -70,6 +73,7 @@ This platform addresses that gap by providing:
 - Accepts or rejects incoming farmer sell requests
 - Records actual weighment and final sale amount
 - Submits payment proof and UPI transaction references
+- Tracks payment status for each farmer to confirm completed and pending payments
 
 ### 🛡️ Host / Admin
 
@@ -148,7 +152,7 @@ Built with SQLAlchemy ORM models on MySQL. Core entities:
 ### 🛒 Marketplace & Trading Flow
 
 - District-based market discovery
-- Variety-wise price and stock publishing
+- Filterable, variety-wise price comparison across markets
 - Sell request submission with quantity and preferred date
 - Accept/reject logic with reasons and locked pricing
 - Auto-generated order IDs on acceptance
@@ -159,6 +163,7 @@ Built with SQLAlchemy ORM models on MySQL. Core entities:
 - Automatic commission and net-payable calculation
 - Multi-stage payment status: `pending → initiated → awaiting verification → paid`
 - Proof-of-payment and UPI reference uploads for host review
+- Shared transaction status visibility for farmers and Mango Traders
 
 ### ✅ Host Verification Layer
 
