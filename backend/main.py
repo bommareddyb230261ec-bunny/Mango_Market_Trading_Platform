@@ -160,7 +160,7 @@ class Config:
             db_user = os.getenv('DB_USER', 'root')
             db_host = os.getenv('DB_HOST', 'localhost')
             db_port = os.getenv('DB_PORT', '3306')
-            db_name = os.getenv('DB_NAME', 'mango_market_db')
+            db_name = os.getenv('DB_NAME', 'defaultdb')
             driver = os.getenv('DB_DRIVER', 'pymysql')
 
             masked = f"{db_user}@{db_host}:{db_port}/{db_name} (driver={driver})"
