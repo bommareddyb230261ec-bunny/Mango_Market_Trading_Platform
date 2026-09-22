@@ -4159,7 +4159,7 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
         app.config.update(test_config)
 
     # Session Configuration - CRITICAL for authentication
-    app.config['SESSION_COOKIE_SECURE'] = False  # Set to True in production with HTTPS
+    app.config['SESSION_COOKIE_SECURE'] = os.environ.get('SESSION_COOKIE_SECURE', 'False').lower() == 'true'
     app.config['SESSION_COOKIE_HTTPONLY'] = True
     app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
     app.config['SESSION_COOKIE_NAME'] = 'mango_session'
@@ -4175,21 +4175,23 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
             'echo': False
         }
 
-    # CORS Configuration - MUST allow credentials and specify origins
-    # Broaden allowed headers to include dev fallback tokens and common AJAX headers
-    # Support environment variable CORS_ORIGINS for production deployment
-    cors_origins = os.environ.get('CORS_ORIGINS', '').split(',')
-    if cors_origins and cors_origins[0]:  # If env var set, use it
-        cors_origins = [o.strip() for o in cors_origins if o.strip()]
+    # CORS Configuration - MUST allow credentials and specify origins.
+    # Support both explicit CORS_ORIGINS and a single FRONTEND_URL for Render.
+    configured_origins = os.environ.get('CORS_ORIGINS', '').strip()
+    if configured_origins:
+        cors_origins = [origin.strip() for origin in configured_origins.split(',') if origin.strip()]
     else:
-        # Default development origins
-        cors_origins = [
-            'http://127.0.0.1:5000', 'http://127.0.0.1:5500',
-            'http://localhost:5000', 'http://localhost:5500',
-            'http://127.0.0.1:8000', 'http://localhost:8000', 
-            'null'  # For file:// protocol testing
-        ]
-    
+        frontend_url = os.environ.get('FRONTEND_URL', '').strip()
+        if frontend_url:
+            cors_origins = [frontend_url]
+        else:
+            cors_origins = [
+                'http://127.0.0.1:5000', 'http://127.0.0.1:5500',
+                'http://localhost:5000', 'http://localhost:5500',
+                'http://127.0.0.1:8000', 'http://localhost:8000',
+                'null'
+            ]
+
     CORS(app,
          supports_credentials=True,
          origins=cors_origins,

@@ -35,23 +35,29 @@ ENVIRONMENT = os.getenv('ENVIRONMENT', 'development')
 def get_database_url() -> str:
     """
     Construct the database URL for MySQL.
-    
-    Format: mysql+{driver}://{user}:{password}@{host}:{port}/{database}
-    
-    Supported drivers:
-    - pymysql (Pure Python implementation)
-    - mysqlconnector (MySQL's official connector - requires mysql-connector-python)
+
+    Prefer DATABASE_URL / SQLALCHEMY_DATABASE_URI when provided by the hosting
+    environment (e.g. Render), and otherwise fall back to DB_* environment
+    variables for local development.
     """
+    database_url = os.getenv('DATABASE_URL') or os.getenv('SQLALCHEMY_DATABASE_URI')
+    if database_url:
+        normalized = database_url.strip()
+        if normalized.startswith('mysql://'):
+            normalized = 'mysql+pymysql://' + normalized[len('mysql://'):]
+        return normalized
+
+    driver = DB_DRIVER.strip()
+    if driver and not driver.startswith('mysql+'):
+        driver = f'mysql+{driver}'
+
     if not DB_PASSWORD:
-        # Handle case where password might be empty
-        database_url = f"mysql+{DB_DRIVER}://{DB_USER}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+        database_url = f"{driver}://{DB_USER}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
     else:
-        # URL encode password to handle special characters
-        # Using urllib for proper URL encoding
         from urllib.parse import quote_plus
         encoded_password = quote_plus(DB_PASSWORD)
-        database_url = f"mysql+{DB_DRIVER}://{DB_USER}:{encoded_password}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
-    
+        database_url = f"{driver}://{DB_USER}:{encoded_password}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+
     return database_url
 
 

@@ -1,10 +1,11 @@
 """
-Mango Market Platform - Entry Point
-Imports create_app from consolidated main.py
-Handles all three systems: Farmer, Broker, and Host
+Mango Market Platform - Production Flask App Entry Point
+
+This module exposes the importable application object expected by Gunicorn.
+The factory remains in main.py to avoid changing the app architecture.
 """
-import sys
 import os
+import sys
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -13,19 +14,20 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from main import create_app
 
+app = create_app()
+
 if __name__ == '__main__':
     print("\nStarting Mango Market Platform...")
     print("   Creating Flask app with all systems (Farmer, Broker, Host)...\n")
-    
-    app = create_app()
-    
-    print("\nStarting server on http://127.0.0.1:5000")
+
+    port = int(os.getenv('PORT', '5000'))
+    print(f"\nStarting server on http://0.0.0.0:{port}")
     print("   Press CTRL+C to stop\n")
-    
+
     app.run(
-        debug=True,
+        debug=False,
         host='0.0.0.0',
-        port=5000,
-        use_reloader=True,
+        port=port,
+        use_reloader=False,
         threaded=True,
     )
