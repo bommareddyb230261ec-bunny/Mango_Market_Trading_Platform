@@ -49,7 +49,7 @@ This platform addresses that gap by providing:
 - A **searchable marketplace** where farmers discover verified Mango Traders by district
 - **Price transparency** through trader-published, variety-wise market rates
 - A **sell-request approval flow** that confirms trader demand before the farmer harvests and transports the fruits
-- A **structured fulfillment and transaction flow** from accepted sell request to payment completion
+- A **structured fulfillment and transaction flow** from accepted sell request to payment on
 - A **host-verified trust layer** for trader onboarding and payment approval
 
 ---
