@@ -7,7 +7,8 @@ document.addEventListener("DOMContentLoaded", () => {
   // Just verify it exists
   if (typeof API_BASE_URL === "undefined") {
     window.API_BASE_URL =
-      window.location.protocol + "//" + window.location.hostname + ":5000";
+      window.location.origin ||
+      `${window.location.protocol}//${window.location.hostname}`;
   }
 
   console.log("Farmer.js initialized with API_BASE_URL:", API_BASE_URL);

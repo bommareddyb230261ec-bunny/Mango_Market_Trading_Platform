@@ -4186,9 +4186,8 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
             cors_origins = [frontend_url]
         else:
             cors_origins = [
-                'http://127.0.0.1:5000', 'http://127.0.0.1:5500',
-                'http://localhost:5000', 'http://localhost:5500',
-                'http://127.0.0.1:8000', 'http://localhost:8000',
+                'https://mango-market-trading-platform.onrender.com',
+                'https://www.mango-market-trading-platform.onrender.com',
                 'null'
             ]
 
@@ -4522,7 +4521,7 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
         print("    - /broker/farmer/<id> - Get farmer details for payment")
         
         print("\n[HOST VERIFICATION SYSTEM]")
-        print("    - /api/host/verify - Verify host password (Charan.56)")
+        print("    - /api/host/verify - Verify host password")
         print("    - /api/host/brokers/pending - View pending brokers")
         print("    - /api/host/brokers/<id>/approve - Approve broker")
         print("    - /api/host/brokers/<id>/reject - Reject broker")
@@ -4544,14 +4543,14 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
         print("FRONTEND ACCESS POINTS")
         print("="*80)
         print("\n  Farmer:")
-        print("    - http://127.0.0.1:5000/frontend/html/farmer_login.html")
-        print("    - http://127.0.0.1:5000/frontend/html/farmer_dashboard.html")
+        print("    - https://mango-market-trading-platform.onrender.com/frontend/html/farmer_login.html")
+        print("    - https://mango-market-trading-platform.onrender.com/frontend/html/farmer_dashboard.html")
         print("\n  Broker:")
-        print("    - http://127.0.0.1:5000/frontend/html/broker_login.html")
-        print("    - http://127.0.0.1:5000/frontend/html/broker_dashboard.html")
+        print("    - https://mango-market-trading-platform.onrender.com/frontend/html/broker_login.html")
+        print("    - https://mango-market-trading-platform.onrender.com/frontend/html/broker_dashboard.html")
         print("\n  Host (Admin):")
-        print("    - http://127.0.0.1:5000/frontend/html/host_access.html (password: Charan.56)")
-        print("    - http://127.0.0.1:5000/frontend/html/host_verification.html")
+        print("    - https://mango-market-trading-platform.onrender.com/frontend/html/host_access.html")
+        print("    - https://mango-market-trading-platform.onrender.com/frontend/html/host_verification.html")
         
         print("\n" + "="*80)
         print("SERVER IS RUNNING - ALL SYSTEMS ACTIVE")
