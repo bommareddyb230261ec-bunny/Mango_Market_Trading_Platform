@@ -31,7 +31,7 @@ def _mask_email(email: str) -> str:
 
 
 def _get_email_provider() -> str:
-    provider = (os.getenv("EMAIL_PROVIDER") or "smtp").strip().lower()
+    provider = (os.getenv("EMAIL_PROVIDER") or "api").strip().lower()
     if provider not in {"smtp", "api"}:
         raise ValueError("Unsupported email provider configured")
     return provider
@@ -88,6 +88,7 @@ def _send_email_via_api(to_email: str, subject: str, body: str) -> bool:
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
             "Accept": "application/json",
+            "User-Agent": "MangoMarket-Backend/1.0",
         },
         method="POST",
     )
@@ -99,11 +100,13 @@ def _send_email_via_api(to_email: str, subject: str, body: str) -> bool:
                 logging.info("Email API sent successfully to %s", _mask_email(to_email))
                 return True
             response_text = response.read().decode("utf-8", "replace")
-            logging.error("Email API rejected send to %s with status %s: %s", _mask_email(to_email), status, response_text[:500])
+            safe_details = response_text[:500].replace(api_key, "[redacted]")
+            logging.error("Email API rejected send to %s with status %s: %s", _mask_email(to_email), status, safe_details)
             return False
     except urllib_error.HTTPError as exc:
         details = exc.read().decode("utf-8", "replace")[:500]
-        logging.error("Email API HTTP error for %s: %s %s", _mask_email(to_email), exc.code, details)
+        safe_details = details.replace(api_key, "[redacted]")
+        logging.error("Email API HTTP error for %s: %s %s", _mask_email(to_email), exc.code, safe_details)
         return False
     except urllib_error.URLError as exc:
         logging.error("Email API network error for %s: %s", _mask_email(to_email), exc.reason)

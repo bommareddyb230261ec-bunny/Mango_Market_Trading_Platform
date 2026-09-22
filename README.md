@@ -300,10 +300,9 @@ DB_USER=root
 DB_PASSWORD=your_password
 DB_NAME=mango_market_db
 DB_DRIVER=pymysql
-SMTP_SERVER=smtp.gmail.com
-SMTP_PORT=465
-SMTP_EMAIL=your_email@example.com
-SMTP_PASSWORD=your_app_password
+EMAIL_PROVIDER=api
+EMAIL_API_KEY=re_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+EMAIL_FROM=verified-sender@example.com
 MANGO_MARKET_ENCRYPTION_KEY=
 CORS_ORIGINS=http://127.0.0.1:5000,http://localhost:5000
 ```
