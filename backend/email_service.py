@@ -2,16 +2,19 @@
 Email and OTP Service for Mango Market Platform
 Production-ready, secure, and reusable email/OTP logic.
 """
-import os
+import json
 import logging
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-from typing import Dict, Any
-from threading import Lock
-from datetime import datetime, timedelta, timezone
+import os
 import secrets
+import smtplib
 import socket
+from datetime import datetime, timedelta, timezone
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from threading import Lock
+from typing import Any, Dict
+from urllib import error as urllib_error
+from urllib import request as urllib_request
 
 # Do NOT load dotenv at import time here. Call load_dotenv() at application startup.
 
@@ -19,7 +22,21 @@ import socket
 _otp_store: Dict[str, Dict[str, Any]] = {}
 _otp_lock = Lock()
 
-# --- ENVIRONMENT VALIDATION ---
+
+def _mask_email(email: str) -> str:
+    if not email or '@' not in email:
+        return "[redacted]"
+    local, domain = email.split('@', 1)
+    return f"{local[:2]}***@{domain}"
+
+
+def _get_email_provider() -> str:
+    provider = (os.getenv("EMAIL_PROVIDER") or "smtp").strip().lower()
+    if provider not in {"smtp", "api"}:
+        raise ValueError("Unsupported email provider configured")
+    return provider
+
+
 def _get_smtp_config():
     smtp_server = os.getenv("SMTP_SERVER")
     smtp_port = os.getenv("SMTP_PORT")
@@ -32,17 +49,71 @@ def _get_smtp_config():
         'SMTP_PASSWORD': smtp_password
     }.items() if not v]
     if missing:
-        logging.error(f"Missing SMTP config: {', '.join(missing)}")
+        logging.error("Missing SMTP config: %s", ', '.join(missing))
         raise ValueError(f"Missing SMTP config: {', '.join(missing)}")
-    # Type asserts to satisfy type checkers
-    assert smtp_server is not None
-    assert smtp_port is not None
-    assert smtp_email is not None
-    assert smtp_password is not None
     return str(smtp_server), int(smtp_port), str(smtp_email), str(smtp_password)
 
-# --- EMAIL SENDING ---
-def send_email(to_email: str, subject: str, body: str) -> bool:
+
+def _get_api_config() -> tuple[str, str]:
+    api_key = (os.getenv("EMAIL_API_KEY") or "").strip()
+    sender_email = (os.getenv("EMAIL_FROM") or "").strip()
+    missing = [name for name, value in {
+        'EMAIL_API_KEY': api_key,
+        'EMAIL_FROM': sender_email,
+    }.items() if not value]
+    if missing:
+        logging.error("Production email API configuration is missing")
+        raise ValueError("Production email API configuration is missing")
+    return api_key, sender_email
+
+
+def _send_email_via_api(to_email: str, subject: str, body: str) -> bool:
+    try:
+        api_key, sender_email = _get_api_config()
+    except ValueError:
+        raise
+
+    url = "https://api.resend.com/emails"
+    payload = {
+        "from": sender_email,
+        "to": [to_email],
+        "subject": subject,
+        "html": body,
+    }
+    data = json.dumps(payload).encode("utf-8")
+    req = urllib_request.Request(
+        url,
+        data=data,
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+        },
+        method="POST",
+    )
+
+    try:
+        with urllib_request.urlopen(req, timeout=15) as response:
+            status = getattr(response, "status", response.getcode())
+            if 200 <= status < 300:
+                logging.info("Email API sent successfully to %s", _mask_email(to_email))
+                return True
+            response_text = response.read().decode("utf-8", "replace")
+            logging.error("Email API rejected send to %s with status %s: %s", _mask_email(to_email), status, response_text[:500])
+            return False
+    except urllib_error.HTTPError as exc:
+        details = exc.read().decode("utf-8", "replace")[:500]
+        logging.error("Email API HTTP error for %s: %s %s", _mask_email(to_email), exc.code, details)
+        return False
+    except urllib_error.URLError as exc:
+        logging.error("Email API network error for %s: %s", _mask_email(to_email), exc.reason)
+        return False
+    except Exception as exc:  # pragma: no cover - broad fallback for runtime issues
+        logging.exception("Unexpected email API failure for %s", _mask_email(to_email))
+        return False
+
+
+def _send_email_via_smtp(to_email: str, subject: str, body: str) -> bool:
     smtp_server, smtp_port, smtp_email, smtp_password = _get_smtp_config()
     try:
         msg = MIMEMultipart()
@@ -54,20 +125,35 @@ def send_email(to_email: str, subject: str, body: str) -> bool:
             try:
                 server.login(smtp_email, smtp_password)
             except smtplib.SMTPAuthenticationError as e:
-                logging.error(f"SMTP authentication failed for {smtp_email}: {e}")
+                logging.error("SMTP authentication failed for %s: %s", _mask_email(smtp_email), e)
                 return False
             server.send_message(msg)
-        logging.info(f"Email sent to {to_email}")
+        logging.info("SMTP email sent to %s", _mask_email(to_email))
         return True
     except (smtplib.SMTPAuthenticationError, smtplib.SMTPException) as e:
-        logging.error(f"SMTP error sending to {to_email}: {e}")
+        logging.error("SMTP error sending to %s: %s", _mask_email(to_email), e)
         return False
     except socket.timeout:
-        logging.error(f"SMTP connection timed out sending to {to_email}")
+        logging.error("SMTP connection timed out sending to %s", _mask_email(to_email))
         return False
     except Exception as e:
-        logging.error(f"Unknown error sending email to {to_email}: {e}")
+        logging.exception("Unknown error sending email to %s", _mask_email(to_email))
         return False
+
+
+# --- EMAIL SENDING ---
+def send_email(to_email: str, subject: str, body: str) -> bool:
+    provider = _get_email_provider()
+    try:
+        if provider == "api":
+            return _send_email_via_api(to_email, subject, body)
+        if provider == "smtp":
+            return _send_email_via_smtp(to_email, subject, body)
+        logging.error("Unsupported email provider configured: %s", provider)
+        return False
+    except ValueError as exc:
+        logging.error("%s", exc)
+        raise
 
 # --- OTP GENERATION, STORAGE, SENDING ---
 def generate_otp(email: str) -> str:

@@ -1324,14 +1324,14 @@ def send_otp():
     try:
         success = send_otp_email(email)
     except ValueError as ve:
-        logging.error(str(ve))
+        logging.error('%s', ve)
         return jsonify({'success': False, 'message': str(ve)}), 500
     except Exception as e:
         logging.exception('Unexpected error sending OTP: %s', e)
         return jsonify({'success': False, 'message': 'Failed to send OTP email. Please try again later.'}), 500
     if success:
         return jsonify({'success': True, 'message': 'OTP sent'}), 200
-    return jsonify({'success': False, 'message': 'Failed to send OTP email. Please check your SMTP configuration.'}), 500
+    return jsonify({'success': False, 'message': 'Failed to send OTP email. Please try again later.'}), 500
 
 
 @auth_bp.route('/verify-otp', methods=['POST'])
@@ -1349,7 +1349,9 @@ def verify_otp_route():
 
 @auth_bp.route('/test-otp-email', methods=['POST'])
 def test_otp_email():
-    data = request.get_json() or {}
+    if os.getenv('ENVIRONMENT', 'development').lower() == 'production':
+        return jsonify({'success': False, 'message': 'This debug route is disabled in production.'}), 403
+    data = request.get_json(silent=True) or {}
     email = (data.get('email') or '').strip()
     if not email:
         return jsonify({'success': False, 'message': 'Email is required'}), 400
