@@ -5,12 +5,14 @@ Production-ready, secure, and reusable email/OTP logic.
 import json
 import logging
 import os
+import re
 import secrets
 import smtplib
 import socket
 from datetime import datetime, timedelta, timezone
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from email.utils import parseaddr
 from threading import Lock
 from typing import Any, Dict
 from urllib import error as urllib_error
@@ -28,6 +30,30 @@ def _mask_email(email: str) -> str:
         return "[redacted]"
     local, domain = email.split('@', 1)
     return f"{local[:2]}***@{domain}"
+
+
+def _email_domain(email: str) -> str:
+    address = parseaddr(email)[1].strip().lower()
+    if '@' not in address:
+        return '[invalid]'
+    return address.rsplit('@', 1)[1]
+
+
+def _safe_provider_error(response_text: str) -> tuple[str, str]:
+    """Extract provider error fields without logging secrets or message bodies."""
+    try:
+        error_data = json.loads(response_text)
+    except (TypeError, ValueError):
+        error_data = None
+
+    if isinstance(error_data, dict):
+        error_type = error_data.get('name') or error_data.get('type') or 'provider_error'
+        error_message = error_data.get('message') or error_data.get('error') or 'No provider message'
+        return str(error_type)[:120], str(error_message)[:300]
+
+    safe_text = re.sub(r'<[^>]*>', ' ', response_text or '')
+    safe_text = ' '.join(safe_text.split())
+    return 'non_json_response', (safe_text or 'Provider returned a non-JSON response')[:300]
 
 
 def _get_email_provider() -> str:
@@ -74,6 +100,13 @@ def _send_email_via_api(to_email: str, subject: str, body: str) -> bool:
         raise
 
     url = "https://api.resend.com/emails"
+    recipient_domain = _email_domain(to_email)
+    sender_domain = _email_domain(sender_email)
+    if sender_domain == 'resend.dev':
+        logging.warning(
+            "Resend test sender configured: sender_domain=%s; arbitrary recipient delivery requires a verified sending domain",
+            sender_domain,
+        )
     payload = {
         "from": sender_email,
         "to": [to_email],
@@ -97,22 +130,50 @@ def _send_email_via_api(to_email: str, subject: str, body: str) -> bool:
         with urllib_request.urlopen(req, timeout=15) as response:
             status = getattr(response, "status", response.getcode())
             if 200 <= status < 300:
-                logging.info("Email API sent successfully to %s", _mask_email(to_email))
+                logging.info(
+                    "Resend email accepted: recipient_domain=%s sender_domain=%s status=%s",
+                    recipient_domain,
+                    sender_domain,
+                    status,
+                )
                 return True
             response_text = response.read().decode("utf-8", "replace")
-            safe_details = response_text[:500].replace(api_key, "[redacted]")
-            logging.error("Email API rejected send to %s with status %s: %s", _mask_email(to_email), status, safe_details)
+            error_type, error_message = _safe_provider_error(response_text)
+            logging.error(
+                "Resend email rejected: recipient_domain=%s sender_domain=%s status=%s error_type=%s error_message=%s",
+                recipient_domain,
+                sender_domain,
+                status,
+                error_type,
+                error_message,
+            )
             return False
     except urllib_error.HTTPError as exc:
-        details = exc.read().decode("utf-8", "replace")[:500]
-        safe_details = details.replace(api_key, "[redacted]")
-        logging.error("Email API HTTP error for %s: %s %s", _mask_email(to_email), exc.code, safe_details)
+        response_text = exc.read().decode("utf-8", "replace")
+        error_type, error_message = _safe_provider_error(response_text)
+        logging.error(
+            "Resend HTTP error: recipient_domain=%s sender_domain=%s status=%s error_type=%s error_message=%s",
+            recipient_domain,
+            sender_domain,
+            exc.code,
+            error_type,
+            error_message,
+        )
         return False
     except urllib_error.URLError as exc:
-        logging.error("Email API network error for %s: %s", _mask_email(to_email), exc.reason)
+        logging.error(
+            "Resend network error: recipient_domain=%s sender_domain=%s reason=%s",
+            recipient_domain,
+            sender_domain,
+            str(exc.reason)[:300],
+        )
         return False
-    except Exception as exc:  # pragma: no cover - broad fallback for runtime issues
-        logging.exception("Unexpected email API failure for %s", _mask_email(to_email))
+    except Exception:  # pragma: no cover - broad fallback for runtime issues
+        logging.exception(
+            "Unexpected Resend failure: recipient_domain=%s sender_domain=%s",
+            recipient_domain,
+            sender_domain,
+        )
         return False
 
 
