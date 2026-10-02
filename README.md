@@ -266,7 +266,7 @@ Mango_Market_Trading_Platform/
 ### Prerequisites
 
 - Python 3.8+
-- MySQL or MariaDB
+- MySQL
 - SMTP credentials (for OTP and email notifications)
 
 ### Installation
@@ -294,7 +294,6 @@ DB_PORT=3306
 DB_USER=root
 DB_PASSWORD=your_password
 DB_NAME=mango_market_db
-DB_DRIVER=pymysql
 SMTP_SERVER=smtp.gmail.com
 SMTP_PORT=465
 SMTP_EMAIL=your_email@example.com

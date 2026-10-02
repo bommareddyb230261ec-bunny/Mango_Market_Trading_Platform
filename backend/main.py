@@ -31,7 +31,7 @@ from flask_sqlalchemy import SQLAlchemy
 # =====================================================
 from sqlalchemy import text, asc, desc, func
 from sqlalchemy.exc import IntegrityError, OperationalError
-from sqlalchemy.pool import StaticPool, QueuePool
+from sqlalchemy.pool import QueuePool
 
 # Use centralized DB URL builder. Try package import first, fall back to local module when
 # running scripts where the project root isn't on sys.path.
@@ -161,9 +161,7 @@ class Config:
             db_host = os.getenv('DB_HOST', 'localhost')
             db_port = os.getenv('DB_PORT', '3306')
             db_name = os.getenv('DB_NAME', 'mango_market_db')
-            driver = os.getenv('DB_DRIVER', 'pymysql')
-
-            masked = f"{db_user}@{db_host}:{db_port}/{db_name} (driver={driver})"
+            masked = f"{db_user}@{db_host}:{db_port}/{db_name} (mysql+pymysql)"
             print(f"[DB DEBUG] Connecting to: {masked}")
 
             if not os.getenv('DB_PASSWORD'):
@@ -573,25 +571,6 @@ class Weighment(db.Model):
             'payment_status': self.payment_status or 'PENDING',
             'created_at': self.created_at.isoformat()
         }
-
-
-def calculate_market_commission(total_amount: float, commission_source: Optional[Any]) -> Dict[str, float]:
-    """Calculate commission and net payable using a stored order rate when available."""
-    total = float(total_amount or 0)
-    if commission_source is not None and getattr(commission_source, 'order_commission', None) is not None:
-        rate = float(getattr(commission_source, 'order_commission', 0) or 0)
-    else:
-        rate = float(getattr(commission_source, 'market_commission', 0) or 0)
-    commission = round((total * rate) / 100, 2)
-    net_payable = round(max(total - commission, 0), 2)
-    return {
-        'total_amount': round(total, 2),
-        'commission_rate': rate,
-        'commission': commission,
-        'net_payable': net_payable
-    }
-
-
 # ==================== FARMER ORDER MAPPING MODEL ====================
 class FarmerOrder(db.Model):
     __tablename__ = 'farmer_orders'
@@ -618,7 +597,26 @@ class FarmerOrder(db.Model):
             'created_at': self.created_at.isoformat()
         }
 
-# Helper: Ensure new SellRequest columns exist (safe SQLite ALTER TABLE for dev)
+
+def calculate_market_commission(total_amount: float, commission_source: Optional[Any]) -> Dict[str, float]:
+    """Calculate commission and net payable using a stored order rate when available."""
+    total = float(total_amount or 0)
+    if commission_source is not None and getattr(commission_source, 'order_commission', None) is not None:
+        rate = float(getattr(commission_source, 'order_commission', 0) or 0)
+    else:
+        rate = float(getattr(commission_source, 'market_commission', 0) or 0)
+    commission = round((total * rate) / 100, 2)
+    net_payable = round(max(total - commission, 0), 2)
+    return {
+        'total_amount': round(total, 2),
+        'commission_rate': rate,
+        'commission': commission,
+        'net_payable': net_payable
+    }
+
+
+
+# Helper: Ensure new SellRequest columns exist in MySQL.
 def ensure_sell_request_columns(engine: Any):
     """
     Adds new columns to 'sell_requests' table if they're missing (idempotent).
@@ -626,13 +624,8 @@ def ensure_sell_request_columns(engine: Any):
     """
     try:
         with engine.connect() as conn:
-            dialect = engine.dialect.name.lower()
-            if dialect in ('mysql', 'mariadb'):
-                result = conn.execute(text("SHOW COLUMNS FROM sell_requests"))
-                cols = [r[0] for r in result]
-            else:
-                result = conn.execute(text("PRAGMA table_info('sell_requests')"))
-                cols = [r[1] for r in result]
+            result = conn.execute(text("SHOW COLUMNS FROM sell_requests"))
+            cols = [r[0] for r in result]
 
             # Column additions if missing
             if 'order_id' not in cols:
@@ -654,56 +647,47 @@ def ensure_sell_request_columns(engine: Any):
 
 def ensure_farmer_columns(engine: Any):
     """
-    Ensure optional columns exist on `farmers` table (idempotent).
-    Adds `address` column when missing for profile storage.
+    Ensure optional columns exist on the `farmers` table.
+    Adds missing columns and ensures encrypted fields use TEXT.
     """
     try:
         with engine.connect() as conn:
-            dialect = engine.dialect.name.lower()
+            result = conn.execute(text("SHOW COLUMNS FROM farmers"))
+            cols = {r[0]: r[1] for r in result}
 
-            if dialect == 'sqlite':
-                result = conn.execute(text("PRAGMA table_info('farmers')"))
-                cols = [r[1] for r in result]
-                if 'address' not in cols:
-                    conn.execute(text("ALTER TABLE farmers ADD COLUMN address TEXT"))
-                if 'account_holder_name' not in cols:
-                    conn.execute(text("ALTER TABLE farmers ADD COLUMN account_holder_name TEXT"))
-                if 'bank_name' not in cols:
-                    conn.execute(text("ALTER TABLE farmers ADD COLUMN bank_name TEXT"))
-                if 'branch_name' not in cols:
-                    conn.execute(text("ALTER TABLE farmers ADD COLUMN branch_name TEXT"))
+            # Add missing columns as TEXT
+            for col in (
+                "address",
+                "account_holder_name",
+                "bank_name",
+                "branch_name",
+                "bank_account_number",
+                "ifsc_code",
+                "upi_id",
+            ):
+                if col not in cols:
+                    conn.execute(
+                        text(f"ALTER TABLE farmers ADD COLUMN {col} TEXT")
+                    )
 
-            elif dialect in ('mysql', 'mariadb'):
-                # For MySQL, ensure optional columns exist and have sufficient type (TEXT)
-                # Add columns if missing, or alter them to TEXT if they are too small
-                result = conn.execute(text("SHOW COLUMNS FROM farmers"))
-                cols = {r[0]: r[1] for r in result}
-
-                # Add missing columns as TEXT
-                for col in ("address", "account_holder_name", "bank_name", "branch_name", "bank_account_number", "ifsc_code", "upi_id"):
-                    if col not in cols:
-                        conn.execute(text(f"ALTER TABLE farmers ADD COLUMN {col} TEXT"))
-
-                # Ensure sensitive/encrypted fields use TEXT (to accommodate encryption length)
-                for col in ("bank_account_number", "ifsc_code", "upi_id", "account_holder_name", "bank_name", "branch_name"):
-                    try:
-                        # MODIFY COLUMN to TEXT (keeps NULL/NOT NULL as-is)
-                        conn.execute(text(f"ALTER TABLE farmers MODIFY COLUMN {col} TEXT"))
-                    except Exception:
-                        # Ignore errors (permission/unsupported) - best-effort
-                        pass
-
-            else:
-                # Unknown dialect - attempt SQLite approach as best-effort
+            # Ensure encrypted fields use TEXT
+            for col in (
+                "bank_account_number",
+                "ifsc_code",
+                "upi_id",
+                "account_holder_name",
+                "bank_name",
+                "branch_name",
+            ):
                 try:
-                    result = conn.execute(text("PRAGMA table_info('farmers')"))
-                    cols = [r[1] for r in result]
-                    if 'address' not in cols:
-                        conn.execute(text("ALTER TABLE farmers ADD COLUMN address TEXT"))
+                    conn.execute(
+                        text(f"ALTER TABLE farmers MODIFY COLUMN {col} TEXT")
+                    )
                 except Exception:
                     pass
+
     except Exception as e:
-        print('Farmer schema check warning (non-fatal):', str(e))
+        print("Farmer schema check warning (non-fatal):", str(e))
 
 
 def ensure_broker_columns(engine: Any):
@@ -713,13 +697,8 @@ def ensure_broker_columns(engine: Any):
     """
     try:
         with engine.connect() as conn:
-            dialect = engine.dialect.name.lower()
-            if dialect in ('mysql', 'mariadb'):
-                result = conn.execute(text("SHOW COLUMNS FROM brokers"))
-                cols = [r[0] for r in result]
-            else:
-                result = conn.execute(text("PRAGMA table_info('brokers')"))
-                cols = [r[1] for r in result]
+            result = conn.execute(text("SHOW COLUMNS FROM brokers"))
+            cols = [r[0] for r in result]
 
             if 'trade_license' not in cols:
                 conn.execute(text("ALTER TABLE brokers ADD COLUMN trade_license TEXT"))
@@ -739,47 +718,23 @@ def ensure_weighment_columns(engine: Any):
     """
     try:
         with engine.begin() as conn:
-            dialect = engine.dialect.name.lower()
-
-            if dialect == 'sqlite':
-                result = conn.execute(text("PRAGMA table_info('weighments')"))
-                cols = [r[1] for r in result]
-                if 'payment_status' not in cols:
-                    conn.execute(text("ALTER TABLE weighments ADD COLUMN payment_status VARCHAR(50) DEFAULT 'PENDING'"))
-                if 'upi_transaction_id' not in cols:
-                    conn.execute(text("ALTER TABLE weighments ADD COLUMN upi_transaction_id VARCHAR(100)"))
-                if 'payment_proof' not in cols:
-                    conn.execute(text("ALTER TABLE weighments ADD COLUMN payment_proof VARCHAR(255)"))
-            elif dialect in ('mysql', 'mariadb'):
-                result = conn.execute(text("SHOW COLUMNS FROM weighments"))
-                cols = {r[0]: r[1] for r in result}
-                if 'payment_status' not in cols:
-                    conn.execute(text("ALTER TABLE weighments ADD COLUMN payment_status VARCHAR(50) DEFAULT 'PENDING'"))
-                else:
-                    existing_type = cols['payment_status'].lower()
-                    if existing_type.startswith('varchar('):
-                        try:
-                            current_size = int(existing_type.split('(')[1].split(')')[0])
-                            if current_size < 50:
-                                conn.execute(text("ALTER TABLE weighments MODIFY COLUMN payment_status VARCHAR(50) DEFAULT 'PENDING'"))
-                        except ValueError:
-                            pass
-                if 'upi_transaction_id' not in cols:
-                    conn.execute(text("ALTER TABLE weighments ADD COLUMN upi_transaction_id VARCHAR(100)"))
-                if 'payment_proof' not in cols:
-                    conn.execute(text("ALTER TABLE weighments ADD COLUMN payment_proof VARCHAR(255)"))
+            result = conn.execute(text("SHOW COLUMNS FROM weighments"))
+            cols = {r[0]: r[1] for r in result}
+            if 'payment_status' not in cols:
+                conn.execute(text("ALTER TABLE weighments ADD COLUMN payment_status VARCHAR(50) DEFAULT 'PENDING'"))
             else:
-                try:
-                    result = conn.execute(text("PRAGMA table_info('weighments')"))
-                    cols = [r[1] for r in result]
-                    if 'payment_status' not in cols:
-                        conn.execute(text("ALTER TABLE weighments ADD COLUMN payment_status VARCHAR(50) DEFAULT 'PENDING'"))
-                    if 'upi_transaction_id' not in cols:
-                        conn.execute(text("ALTER TABLE weighments ADD COLUMN upi_transaction_id VARCHAR(100)"))
-                    if 'payment_proof' not in cols:
-                        conn.execute(text("ALTER TABLE weighments ADD COLUMN payment_proof VARCHAR(255)"))
-                except Exception:
-                    pass
+                existing_type = cols['payment_status'].lower()
+                if existing_type.startswith('varchar('):
+                    try:
+                        current_size = int(existing_type.split('(')[1].split(')')[0])
+                        if current_size < 50:
+                            conn.execute(text("ALTER TABLE weighments MODIFY COLUMN payment_status VARCHAR(50) DEFAULT 'PENDING'"))
+                    except ValueError:
+                        pass
+            if 'upi_transaction_id' not in cols:
+                conn.execute(text("ALTER TABLE weighments ADD COLUMN upi_transaction_id VARCHAR(100)"))
+            if 'payment_proof' not in cols:
+                conn.execute(text("ALTER TABLE weighments ADD COLUMN payment_proof VARCHAR(255)"))
     except Exception as e:
         print('Weighment schema check warning (non-fatal):', str(e))
 
@@ -790,41 +745,23 @@ def ensure_transaction_columns(engine: Any):
     """
     try:
         with engine.connect() as conn:
-            dialect = engine.dialect.name.lower()
-
-            if dialect == 'sqlite':
-                result = conn.execute(text("PRAGMA table_info('transactions')"))
-                cols = [r[1] for r in result]
-                if 'upi_transaction_id' not in cols:
-                    conn.execute(text("ALTER TABLE transactions ADD COLUMN upi_transaction_id VARCHAR(100)"))
-            elif dialect in ('mysql', 'mariadb'):
-                result = conn.execute(text("SHOW COLUMNS FROM transactions"))
-                cols = {r[0]: r[1] for r in result}
-                if 'payment_status' not in cols:
-                    conn.execute(text("ALTER TABLE transactions ADD COLUMN payment_status VARCHAR(50) DEFAULT 'PENDING'"))
-                else:
-                    existing_type = cols['payment_status'].lower()
-                    if existing_type.startswith('varchar('):
-                        try:
-                            current_size = int(existing_type.split('(')[1].split(')')[0])
-                            if current_size < 50:
-                                conn.execute(text("ALTER TABLE transactions MODIFY COLUMN payment_status VARCHAR(50) DEFAULT 'PENDING'"))
-                        except ValueError:
-                            pass
-                if 'upi_transaction_id' not in cols:
-                    conn.execute(text("ALTER TABLE transactions ADD COLUMN upi_transaction_id VARCHAR(100)"))
-                if 'payment_proof' not in cols:
-                    conn.execute(text("ALTER TABLE transactions ADD COLUMN payment_proof VARCHAR(255)"))
+            result = conn.execute(text("SHOW COLUMNS FROM transactions"))
+            cols = {r[0]: r[1] for r in result}
+            if 'payment_status' not in cols:
+                conn.execute(text("ALTER TABLE transactions ADD COLUMN payment_status VARCHAR(50) DEFAULT 'PENDING'"))
             else:
-                try:
-                    result = conn.execute(text("PRAGMA table_info('transactions')"))
-                    cols = [r[1] for r in result]
-                    if 'upi_transaction_id' not in cols:
-                        conn.execute(text("ALTER TABLE transactions ADD COLUMN upi_transaction_id VARCHAR(100)"))
-                    if 'payment_proof' not in cols:
-                        conn.execute(text("ALTER TABLE transactions ADD COLUMN payment_proof VARCHAR(255)"))
-                except Exception:
-                    pass
+                existing_type = cols['payment_status'].lower()
+                if existing_type.startswith('varchar('):
+                    try:
+                        current_size = int(existing_type.split('(')[1].split(')')[0])
+                        if current_size < 50:
+                            conn.execute(text("ALTER TABLE transactions MODIFY COLUMN payment_status VARCHAR(50) DEFAULT 'PENDING'"))
+                    except ValueError:
+                        pass
+            if 'upi_transaction_id' not in cols:
+                conn.execute(text("ALTER TABLE transactions ADD COLUMN upi_transaction_id VARCHAR(100)"))
+            if 'payment_proof' not in cols:
+                conn.execute(text("ALTER TABLE transactions ADD COLUMN payment_proof VARCHAR(255)"))
     except Exception as e:
         print('Transaction schema check warning (non-fatal):', str(e))
 
@@ -4141,8 +4078,7 @@ from typing import Any
 
 def create_app(test_config: dict[str, Any] | None = None) -> Flask:
     """Factory: Create Flask app.
-    Accepts an optional test_config dict (for CI / testing). When `TESTING` is True
-    the app uses an in-memory SQLite DB with StaticPool so tests run in isolation.
+    Accepts an optional test_config dict for CI and testing.
     """
     # Load environment variables at app startup (idempotent). Tests can override env as needed.
     try:
@@ -4158,6 +4094,10 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
     if test_config:
         app.config.update(test_config)
 
+    database_uri = app.config.get('SQLALCHEMY_DATABASE_URI')
+    if not isinstance(database_uri, str) or not database_uri.startswith('mysql+pymysql://'):
+        raise ValueError('Only MySQL connections using PyMySQL are supported.')
+
     # Session Configuration - CRITICAL for authentication
     app.config['SESSION_COOKIE_SECURE'] = False  # Set to True in production with HTTPS
     app.config['SESSION_COOKIE_HTTPONLY'] = True
@@ -4165,15 +4105,6 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
     app.config['SESSION_COOKIE_NAME'] = 'mango_session'
     app.config['PERMANENT_SESSION_LIFETIME'] = 3600  # 1 hour
     app.config['SESSION_COOKIE_DOMAIN'] = None  # Allow localhost
-
-    # If running tests, prefer in-memory DB with a StaticPool so multiple connections work
-    if app.config.get('TESTING'):
-        app.config['SQLALCHEMY_DATABASE_URI'] = app.config.get('SQLALCHEMY_DATABASE_URI', 'sqlite:///:memory:')
-        app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
-            'connect_args': {'check_same_thread': False},
-            'poolclass': StaticPool,
-            'echo': False
-        }
 
     # CORS Configuration - MUST allow credentials and specify origins
     # Broaden allowed headers to include dev fallback tokens and common AJAX headers
@@ -4294,7 +4225,7 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
         except OSError:
             pass
 
-        # Create DB schema (in-memory or file-based depending on config)
+        # Create the MySQL database schema.
         create_all_attempts = 3
         for attempt in range(1, create_all_attempts + 1):
             try:
@@ -4308,7 +4239,7 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
                     continue
                 raise
 
-        # Ensure new columns for SellRequest exist (idempotent, safe for SQLite)
+        # Ensure new columns for SellRequest exist (idempotent).
         try:
             ensure_sell_request_columns(db.engine)
         except Exception as e:
@@ -4380,29 +4311,20 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
 
                 # Remove any existing non-unique index on order_id so we can create a unique one
                 try:
-                    if conn.engine.dialect.name.lower() in ('mysql', 'mariadb'):
-                        conn.execute(text("DROP INDEX ix_weighments_order_id ON weighments"))
-                    else:
-                        conn.execute(text("DROP INDEX IF EXISTS ix_weighments_order_id"))
+                    conn.execute(text("DROP INDEX ix_weighments_order_id ON weighments"))
                 except Exception:
                     pass
 
                 # Try to create unique indexes. If creation fails (likely due to remaining duplicates), log a clear warning but do not stop app startup
                 try:
-                    if conn.engine.dialect.name.lower() in ('mysql', 'mariadb'):
-                        conn.execute(text("CREATE UNIQUE INDEX ux_weighments_order_id ON weighments(order_id)"))
-                    else:
-                        conn.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS ux_weighments_order_id ON weighments(order_id)"))
+                    conn.execute(text("CREATE UNIQUE INDEX ux_weighments_order_id ON weighments(order_id)"))
                 except Exception as e:
                     error_text = str(e).lower()
                     if 'duplicate key name' not in error_text and 'already exists' not in error_text:
                         print('Warning: Could not create unique index ux_weighments_order_id (duplicates may remain):', str(e))
 
                 try:
-                    if conn.engine.dialect.name.lower() in ('mysql', 'mariadb'):
-                        conn.execute(text("CREATE UNIQUE INDEX ux_farmer_orders_order_id ON farmer_orders(order_id)"))
-                    else:
-                        conn.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS ux_farmer_orders_order_id ON farmer_orders(order_id)"))
+                    conn.execute(text("CREATE UNIQUE INDEX ux_farmer_orders_order_id ON farmer_orders(order_id)"))
                 except Exception as e:
                     error_text = str(e).lower()
                     if 'duplicate key name' not in error_text and 'already exists' not in error_text:

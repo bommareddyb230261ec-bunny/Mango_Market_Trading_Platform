@@ -23,7 +23,6 @@ DB_PORT = os.getenv('DB_PORT', '3306')
 DB_USER = os.getenv('DB_USER', 'root')
 DB_PASSWORD = os.getenv('DB_PASSWORD', '')
 DB_NAME = os.getenv('DB_NAME', 'mango_market_db')
-DB_DRIVER = os.getenv('DB_DRIVER', 'pymysql')  # Options: pymysql, mysqlconnector
 
 # Optional: For development/testing environment flag
 ENVIRONMENT = os.getenv('ENVIRONMENT', 'development')
@@ -34,23 +33,14 @@ ENVIRONMENT = os.getenv('ENVIRONMENT', 'development')
 # =====================================================
 def get_database_url() -> str:
     """
-    Construct the database URL for MySQL.
-    
-    Format: mysql+{driver}://{user}:{password}@{host}:{port}/{database}
-    
-    Supported drivers:
-    - pymysql (Pure Python implementation)
-    - mysqlconnector (MySQL's official connector - requires mysql-connector-python)
+    Construct the MySQL database URL using PyMySQL.
     """
     if not DB_PASSWORD:
-        # Handle case where password might be empty
-        database_url = f"mysql+{DB_DRIVER}://{DB_USER}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+        database_url = f"mysql+pymysql://{DB_USER}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
     else:
-        # URL encode password to handle special characters
-        # Using urllib for proper URL encoding
         from urllib.parse import quote_plus
         encoded_password = quote_plus(DB_PASSWORD)
-        database_url = f"mysql+{DB_DRIVER}://{DB_USER}:{encoded_password}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+        database_url = f"mysql+pymysql://{DB_USER}:{encoded_password}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
     
     return database_url
 
@@ -67,8 +57,6 @@ def create_db_engine():
         
     Connection pool options:
     - QueuePool: Default, uses queue for thread-safe connections
-    - NullPool: No pooling (useful for SQLite compatibility)
-    - ThreadLocalPool: One connection per thread
     """
     database_url = get_database_url()
     
@@ -203,7 +191,7 @@ class MySQLConfig:
     # Secret key for Flask sessions
     SECRET_KEY = os.environ.get('SECRET_KEY', 'mango_market_secure_key_2026')
     
-    # Database configuration using MySQL instead of SQLite
+    # MySQL database configuration using PyMySQL.
     SQLALCHEMY_DATABASE_URI = get_database_url()
     
     # Disable SQLAlchemy modification tracking (slight performance boost)
