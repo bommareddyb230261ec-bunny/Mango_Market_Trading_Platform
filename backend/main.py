@@ -119,8 +119,6 @@ def error_response(message: str, status: int = 400, error_code: Optional[str] = 
 # =====================================================
 # DATABASE INITIALIZATION
 # =====================================================
-# DATABASE INITIALIZATION
-# =====================================================
 db = SQLAlchemy()
 
 # =====================================================
@@ -128,7 +126,7 @@ db = SQLAlchemy()
 # =====================================================
 class Config:
     """
-    Application configuration - UPDATED FOR MYSQL
+    Application configuration - FOR MYSQL
     Uses environment variables from .env for secure credential management.
     For reference, see db_config.py for detailed MySQL configuration options.
     """
@@ -183,9 +181,9 @@ class User(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
-    phone = db.Column(db.String(20), unique=True, nullable=False, index=True)
-    email = db.Column(db.String(120), nullable=True)  # Removed unique constraint
-    password_hash = db.Column(db.String(255), nullable=False)
+    phone = db.Column(db.String(20), unique=False, nullable=False, index=True)
+    email = db.Column(db.String(120), nullable=False)  
+    password_hash = db.Column(db.String(256), nullable=False)
     role = db.Column(db.String(20), nullable=False)  # "FARMER" or "BROKER"
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
@@ -938,7 +936,7 @@ def check_email():
     if not email:
         return jsonify({'available': True}), 200
     
-    # email parameter already validated as non-empty; simple equality check is sufficient
+    # email parameter already validate  d as non-empty; simple equality check is sufficient
     existing = User.query.filter_by(email=email).first()
     
     return jsonify({'available': existing is None}), 200
