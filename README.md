@@ -135,6 +135,7 @@ Built with SQLAlchemy ORM models on MySQL. Core entities:
 | `weighments`    | Recorded crop weight & final pricing                            |
 | `transactions`  | Payment records & status tracking                               |
 | `farmer_orders` | Order lifecycle tied to accepted requests                       |
+
 ![Mango Market database schema](mango_market_db_schema.png)
 
 ---
